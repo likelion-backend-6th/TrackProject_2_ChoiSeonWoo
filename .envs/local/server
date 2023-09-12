@@ -1,0 +1,2 @@
+NGINX_HOST=localhost
+DJANGO_HOST=swns

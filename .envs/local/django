@@ -1,0 +1,3 @@
+DB_HOST=postgres
+DJANGO_SETTINGS_MODULE=config.settings.local
+DJANGO_SECRET_KEY='django-insecure-h*1l4m4@6&87b%x^4t4-fkco$j2x3ok%_n_)ka(2%h3^rg8ml('

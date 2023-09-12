@@ -1,0 +1,15 @@
+server {
+        listen 80;
+        server_name 127.0.0.1 $NGINX_HOST;
+
+        location / {
+                proxy_pass http://$DJANGO_HOST:8000;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+        }
+
+        location /static/ {
+                alias /var/www/html/static/;
+                autoindex off;
+        }
+}

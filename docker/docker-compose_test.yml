@@ -1,0 +1,32 @@
+version: '3'
+
+services:
+  postgres:
+    container_name: swns-db
+    image: postgres:13
+    ports:
+      - 5432:5432
+    env_file:
+      - ../.envs/local/db
+
+  swns:
+    depends_on:
+      - postgres
+    container_name: swns-dj
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile_dj
+    env_file:
+      - ../.envs/local/db
+      - ../.envs/local/django
+      - ../.envs/local/server
+    environment:
+      NCP_ACCESS_KEY: $NCP_ACCESS_KEY
+      NCP_SECRET_KEY: $NCP_SECRET_KEY
+      NCP_S3_ENDPOINT_URL: $NCP_S3_ENDPOINT_URL
+      NCP_S3_REGION_NAME: $NCP_S3_REGION_NAME
+      NCP_S3_BUCKET_NAME: $NCP_S3_BUCKET_NAME
+      AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+      AWS_REGION: $AWS_REGION
+      AWS_STORAGE_BUCKET_NAME: $AWS_STORAGE_BUCKET_NAME

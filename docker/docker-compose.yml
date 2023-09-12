@@ -1,0 +1,53 @@
+version: '3'
+
+services:
+  postgres:
+    container_name: swns-db
+    image: postgres:13
+    ports:
+      - 5432:5432
+    env_file:
+      - ../.envs/local/db
+    volumes:
+      - postgres_swns:/var/lib/postgresql/data
+
+  swns:
+    depends_on:
+      - postgres
+    container_name: swns-dj
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile_dj
+    image: swns-dj
+    volumes:
+      - ..:/app
+      - swns-static:/var/www/html/static
+    ports:
+      - 8000:8000
+    command:
+      - "/start"
+    env_file:
+      - ../.envs/local/db
+      - ../.envs/local/django
+      - ../.envs/local/server
+      - ../.envs/prod/cloud
+  
+  nginx:
+    restart: always
+    depends_on:
+      - swns
+    container_name: swns-nx
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile_nginx
+    image: swns-nx
+    volumes:
+      - swns-static:/var/www/html/static
+    ports:
+      - 8888:80
+    env_file:
+      - ../.envs/local/server
+
+volumes:
+  swns-static:
+  postgres_swns:

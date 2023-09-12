@@ -1,0 +1,5 @@
+#!/bin/bash
+
+sed -i "s/\$NGINX_HOST/$NGINX_HOST/" /etc/nginx/sites-available/django
+sed -i "s/\$DJANGO_HOST/$DJANGO_HOST/" /etc/nginx/sites-available/django
+service nginx restart
