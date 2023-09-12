@@ -2,8 +2,6 @@ name: CI
 
 on:
     push:
-        branches:
-            - 'feat/**'
         paths-ignore:
             - 'infra/**'
             - 'script/**'
