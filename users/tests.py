@@ -1,16 +1,13 @@
-import tempfile
-import io
 from datetime import datetime
 from unittest.mock import patch, MagicMock
 
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
-from PIL import Image
-
 from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from rest_framework.response import Response
+from common.test import create_sample_image
 
 from posts.models import Post
 from users.models import Follow, Profile
@@ -332,32 +329,25 @@ class ProfileViewSetTest(APITestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
 
-    @patch("common.utils.image_s3_upload")
-    def test_patch_data(self, client: MagicMock):
+    @patch("common.utils.Image.s3_client")
+    def test_patch_data(self, s3_client: MagicMock):
         test_url = reverse("profile-detail", args=[self.profile01.pk])
-        image_s3_upload = MagicMock()
-        client.return_value = image_s3_upload
-        image_s3_upload.return_value = {
-            "user": self.user01.id,
-            "image_url": "https://example.com/image.jpg",
-        }
+
+        s3_client.upload_fileobj.return_value = None
+        s3_client.put_object_acl.return_value = None
 
         client = APIClient()
         client.force_authenticate(user=self.user01)
 
-        image = Image.new("RGB", (1, 1), (255, 0, 0))
+        sample_image = create_sample_image()
 
-        image_bytes = io.BytesIO()
-        image.save(image_bytes, format="JPEG")
-        image_data = image_bytes.getvalue()
+        data = {"user": self.user01.id, "image": sample_image}
+        res = client.patch(test_url, data=data)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(res.data.get("image_url").startswith("https://"))
 
-        with tempfile.NamedTemporaryFile(suffix=".jpg") as tmpfile:
-            tmpfile.write(image_data)
-            tmpfile.seek(0)
-            data = {"user": self.user01.id, "image": tmpfile}
-            res = client.patch(test_url, data=data)
-            self.assertEqual(res.status_code, status.HTTP_200_OK)
-            self.assertTrue(res.data.get("image_url").startswith("https://"))
+        s3_client.upload_fileobj.assert_called_once()
+        s3_client.put_object_acl.assert_called_once()
 
 
 class FollowViewSetTest(APITestCase):
