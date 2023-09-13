@@ -15,22 +15,26 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
+
+from common.permissions import IsAdminOrReadOnly
+from posts.filters import PostFilter
 
 from posts.models import Post
 from posts.serializers import PostSerializer
 
 from users.models import Follow, Profile, User
-from users.permissions import UserCustomReadOnly
 from users.serializers import (
-    FollowSerializer,
-    ProfileUploadSerializer,
+    ProfilesSerializer,
     ProfileSerializer,
     SignUpSeiralizer,
     LoginSeiralizer,
+    UserInfoSerializer,
     UserSerializer,
+    FollowSerializer,
 )
-from users.filters import FollowFilter, UserFilter, ProfileFilter
+from users.filters import UserFilter, ProfileFilter, FollowFilter
 
 
 @extend_schema(tags=["Auth"])
@@ -100,7 +104,7 @@ class TokenRefreshView_(TokenRefreshView):
 
 @extend_schema(tags=["User"])
 class UserViewSet(viewsets.ModelViewSet):
-    permission_classes = [UserCustomReadOnly]
+    permission_classes = [IsAdminOrReadOnly]
     queryset = User.objects.all()
     serializer_class = UserSerializer
     filterset_class = UserFilter
@@ -110,6 +114,7 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
+    @extend_schema(deprecated=True)
     def create(self, request: Request, *args, **kwargs):
         return Response(
             data={"message": "Create operation is not supported"},
@@ -184,15 +189,10 @@ class UserViewSet(viewsets.ModelViewSet):
 
 @extend_schema(tags=["Profile"])
 class ProfileViewSet(viewsets.ModelViewSet):
-    permission_classes = [UserCustomReadOnly]
+    permission_classes = [IsAdminOrReadOnly]
     queryset = Profile.objects.all()
-    serializer_class = ProfileSerializer
+    serializer_class = ProfilesSerializer
     filterset_class = ProfileFilter
-
-    def get_serializer_class(self):
-        if self.action not in ["list", "retrieve"]:
-            return ProfileUploadSerializer
-        return super().get_serializer_class()
 
     def list(self, request: Request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -202,7 +202,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
 
 @extend_schema(tags=["Follow"])
 class FollowViewSet(viewsets.ModelViewSet):
-    permission_classes = [UserCustomReadOnly]
+    permission_classes = [IsAdminOrReadOnly]
     queryset = Follow.objects.all()
     serializer_class = FollowSerializer
     filterset_class = FollowFilter
@@ -210,4 +210,129 @@ class FollowViewSet(viewsets.ModelViewSet):
     def list(self, request: Request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(queryset, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["My"])
+class UserInfoView(APIView):
+    serializer_class = UserInfoSerializer
+
+    def get(self, request):
+        users: User = User.objects.select_related("profile").exclude(id=request.user.id)
+
+        serializer = self.serializer_class(users, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["My"])
+class MyInfoView(APIView):
+    serializer_class = UserInfoSerializer
+
+    def get(self, request):
+        user: User = request.user
+
+        serializer = self.serializer_class(user)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        serializer = self.serializer_class(request.user, data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "modified success"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=["My"])
+class ProfileView(APIView):
+    serializer_class = ProfileSerializer
+
+    def get(self, request):
+        user: User = request.user
+        profile = user.profile
+
+        serializer = self.get_serializer(profile)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "modified success"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request):
+        serializer = self.serializer_class(request.user.profile, data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "modified success"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=["My"], operation_id="follow_view")
+class FollowView(APIView):
+    def post(self, request, id):
+        user: User = request.user
+
+        followee = get_object_or_404(User, id=id)
+        follow, created = Follow.objects.get_or_create(user_from=user, user_to=followee)
+
+        if created:
+            return Response(
+                data={"message": "Follow successfully"}, status=status.HTTP_201_CREATED
+            )
+
+        follow.delete()
+
+        return Response(
+            data={"message": "Unfollowed successfully"},
+            status=status.HTTP_204_NO_CONTENT,
+        )
+
+
+@extend_schema(tags=["My"], operation_id="following_view")
+class FollowingView(APIView):
+    serializer_class = UserSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = UserFilter
+
+    def get(self, request):
+        user: User = request.user
+        following = user.following.all()
+        queryset = self.filter_queryset(following)
+
+        serializer = self.serializer_class(queryset, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["My"], operation_id="follower_view")
+class FollowerView(APIView):
+    serializer_class = UserSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = UserFilter
+
+    def get(self, request):
+        user: User = request.user
+        follower = user.follower.all()
+        queryset = self.filter_queryset(follower)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["My"])
+class FeedView(APIView):
+    serializer_class = PostSerializer
+    filter_backends = DjangoFilterBackend
+    filterset_class = PostFilter
+
+    def get(self, request):
+        user = request.user
+        following = user.following.all()
+        posts = Post.objects.filter(author__in=following)
+        queryset = self.filter_backends().filter_queryset(request, posts, self)
+
+        serializer = self.serializer_class(queryset, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
