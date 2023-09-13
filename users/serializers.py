@@ -1,8 +1,5 @@
 from rest_framework import serializers
 
-from drf_spectacular.utils import extend_schema_field
-from drf_spectacular.types import OpenApiTypes
-
 from users.models import Follow, User, Profile
 from common.utils import image_s3_upload
 
@@ -50,9 +47,17 @@ class UserSerializer(serializers.ModelSerializer):
             "password",
             "phone",
             "is_active",
+            "is_admin",
         )
         extra_kwargs = {"password": {"write_only": True}}
-        read_only_fields = ("email",)
+
+        read_only_fields = (
+            "email",
+            "is_active",
+            "is-admin",
+            "created_at",
+            "updated_at",
+        )
 
     def update(self, instance, validated_data):
         if "password" in validated_data:
@@ -66,20 +71,30 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
-class ProfileUploadSerializer(serializers.ModelSerializer):
-    image = serializers.ImageField(required=False)
+class ProfilesSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(required=False, write_only=True)
 
     class Meta:
         model = Profile
         fields = (
+            "id",
             "user",
             "nickname",
             "birthday",
             "image",
             "image_url",
+            "is_public",
+            "is_active",
+            "created_at",
+            "updated_at",
         )
-        extra_kwargs = {"image": {"write_only": True}}
-        read_only_fields = ("image_url",)
+        read_only_fields = (
+            "image_url",
+            "is_public",
+            "is_active",
+            "created_at",
+            "updated_at",
+        )
 
     def create(self, validated_data):
         validated_data = image_s3_upload(validated_data)
@@ -95,23 +110,56 @@ class ProfileUploadSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-    user = serializers.SerializerMethodField()
-
-    @extend_schema_field(OpenApiTypes.OBJECT)
-    def get_user(self, obj: Profile):
-        user = obj.user
-        return UserSerializer(user).data
+    image = serializers.ImageField(required=False, write_only=True)
 
     class Meta:
         model = Profile
         fields = (
             "id",
-            "user",
             "nickname",
             "birthday",
+            "image",
             "image_url",
             "is_public",
             "is_active",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = (
+            "image_url",
+            "is_public",
+            "is_active",
+            "created_at",
+            "updated_at",
+        )
+
+    def create(self, validated_data):
+        validated_data = image_s3_upload(validated_data)
+        validated_data["user"] = self.context.get("request").user
+        instance = super().create(validated_data)
+
+        return instance
+
+    def update(self, instance, validated_data):
+        validated_data = image_s3_upload(validated_data)
+        instance = super().update(instance, validated_data)
+
+        return instance
+
+
+class UserInfoSerializer(serializers.ModelSerializer):
+    profile = ProfileSerializer()
+
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "email",
+            "fullname",
+            "phone",
+            "profile",
+            "is_active",
+            "is_admin",
         )
 
 
