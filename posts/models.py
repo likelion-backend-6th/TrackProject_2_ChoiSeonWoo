@@ -54,6 +54,15 @@ class Post(CommonModel, models.Model):
     def __str__(self):
         return self.title
 
+    def unique_slug_generator(self, new_slug=None):
+        slug = slugify(self.title, allow_unicode=True)
+        new_slug = slug
+        numb = 1
+        while Post.objects.filter(slug=new_slug).exists():
+            new_slug = "{slug}-{num}".format(slug=slug, num=numb)
+            numb += 1
+        return new_slug
+
     def save(self, *args, **kwargs):
-        self.slug = slugify(self.title, allow_unicode=True)
+        self.slug = self.unique_slug_generator()
         super().save(*args, **kwargs)
