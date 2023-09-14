@@ -7,6 +7,7 @@ from users.views import (
     LoginView,
     UserViewSet,
     ProfileViewSet,
+    FollowViewSet,
     UserInfoView,
     MyInfoView,
     ProfileView,
@@ -18,6 +19,7 @@ from users.views import (
 
 router = DefaultRouter()
 router.register("profiles", ProfileViewSet, basename="profile")
+router.register("follows", FollowViewSet, basename="follow")
 router.register("", UserViewSet, basename="user")
 # router.register("path명", ViewSet클래스, basename="basename지정")
 
@@ -27,11 +29,11 @@ urlpatterns = [
     path("signup/", SignUpView.as_view(), name="signup"),
     path("login/", LoginView.as_view(), name="login"),
     path("others/", UserInfoView.as_view(), name="other_users"),
-    path("myinfo/", MyInfoView.as_view(), name="myinfo"),
-    path("profile/", ProfileView.as_view(), name="profile"),
-    path("follow/<int:id>/", FollowView.as_view(), name="follow"),
-    path("following/", FollowingView.as_view(), name="following"),
-    path("follower/", FollowerView.as_view(), name="follower"),
+    path("myinfo/", MyInfoView.as_view(), name="my_info"),
+    path("profile/", ProfileView.as_view(), name="my_profile"),
+    path("follow/<int:id>/", FollowView.as_view(), name="my_follow"),
+    path("following/", FollowingView.as_view(), name="my_following"),
+    path("follower/", FollowerView.as_view(), name="my_follower"),
     path("feed/", FeedView.as_view(), name="feed"),
     path("", include(router.urls)),
 ]
