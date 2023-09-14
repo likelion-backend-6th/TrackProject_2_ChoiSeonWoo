@@ -127,8 +127,6 @@ class ProfileSerializer(serializers.ModelSerializer):
         )
         read_only_fields = (
             "image_url",
-            "is_public",
-            "is_active",
             "created_at",
             "updated_at",
         )
@@ -160,10 +158,13 @@ class UserInfoSerializer(serializers.ModelSerializer):
             "profile",
             "is_active",
             "is_admin",
+            "created_at",
+            "updated_at",
         )
 
 
 class FollowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Follow
-        exclude = ("created_at",)
+        fields = "__all__"
+        read_only_fields = ("created_at",)
