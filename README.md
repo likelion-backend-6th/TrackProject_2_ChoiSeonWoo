@@ -365,6 +365,18 @@
 - [x]  정적 파일 정상 서빙 확인
 - [x]  Terraform 코드 수정
 
+### 1️⃣0️⃣ Refactor
+
+- [x]  Common - Permission 수정
+- [x]  Users - Model 수정
+- [x]  Users - Serializer 수정
+- [x]  Users - View & Url 수정
+- [x]  Posts - Model 수정
+- [x]  Posts - Serializer 수정
+- [x]  Posts - View & Url 수정
+- [x]  Test 시나리오 작성
+- [x]  Test Code 작성 및 실행
+
 
 
 <br>
@@ -389,6 +401,9 @@
 
 ### 🕍 2차 진행 관련
 - [14. (🏗 SETTING) 2차 프로젝트 준비](https://notion.so/9d5e7351a3d1459d8ab962f031586793)
+- [15. (❓❗ Q&A) Mocking (2)](https://notion.so/28565c259b02432687e46b71704a9735)
+- [16. (🐞 BUG) TestCode - Mocking](https://notion.so/ba4877b4c33e49909e28de18ab313dcb)
+- [17. (👑 FEATURE) Refactor](https://notion.so/3b5063b7350c4950bea326f0e0e13da2)
 
 
 <br>
