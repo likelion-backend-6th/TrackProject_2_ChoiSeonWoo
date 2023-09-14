@@ -72,7 +72,7 @@ class User(CommonModel, AbstractBaseUser, PermissionsMixin):
 
 class Profile(CommonModel, models.Model):
     user = models.OneToOneField(
-        User, on_delete=models.PROTECT, verbose_name="유저", related_name="profile"
+        User, on_delete=models.CASCADE, verbose_name="유저", related_name="profile"
     )
     nickname = models.TextField(verbose_name="닉네임", max_length=30, unique=True)
     birthday = models.DateField(verbose_name="생년월일")
