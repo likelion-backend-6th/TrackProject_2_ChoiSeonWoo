@@ -67,7 +67,7 @@ class CustomReadOnly(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         user = request.user
-
+        if request.method in self.SAFE_METHODS:
             return True
         if self.class_name(obj) == "User" and obj.email == user.email:
             return True
