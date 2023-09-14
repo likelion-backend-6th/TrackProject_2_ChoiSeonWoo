@@ -25,7 +25,7 @@ class ProfileFilter(filters.FilterSet):
 
 class FollowFilter(filters.FilterSet):
     user_from = filters.CharFilter(field_name="user_from", lookup_expr="exact")
-    user_to = filters.CharFilter(field_name="user_from", lookup_expr="exact")
+    user_to = filters.CharFilter(field_name="user_to", lookup_expr="exact")
 
     class Meta:
         model = Follow

@@ -9,8 +9,8 @@ class GenericAPIException(APIException):
         super().__init__(detail=detail, code=code)
 
 
-class CustomReadOnly(BasePermission):
-    SAFE_ACTIONS = ("list",)
+class IsAdminOrReadOnly(BasePermission):
+    SAFE_METHODS = ("GET",)
     message = "Not Allowed"
 
     @staticmethod
@@ -19,13 +19,13 @@ class CustomReadOnly(BasePermission):
 
     def has_permission(self, request, view):
         user = request.user
-        if view.action in self.SAFE_ACTIONS:
+        if request.method in self.SAFE_METHODS:
             return True
-        elif user.is_authenticated:
+        elif user.is_admin:
             return True
-        elif not user.is_authenticated:
+        elif not user.is_admin:
             response = {
-                "detail": "Please log in to use the service.",
+                "detail": "Administrator privileges required",
             }
             raise GenericAPIException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail=response
@@ -34,10 +34,47 @@ class CustomReadOnly(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         user = request.user
-        if (
-            view.action in self.SAFE_ACTIONS
-            or user.is_admin == True
-            or (self.class_name(obj) == "User" and obj.email == user.email)
-        ):
+        if request.method in self.SAFE_METHODS:
             return True
+        elif user.is_admin:
+            return True
+        return False
+
+
+class CustomReadOnly(BasePermission):
+    SAFE_METHODS = ("GET",)
+    attributes_to_check = ("email", "user", "user_from", "author")
+    message = "Not Allowed"
+
+    @staticmethod
+    def class_name(obj):
+        return type(obj).__name__
+
+    def has_permission(self, request, view):
+        user = request.user
+        if request.method in self.SAFE_METHODS:
+            return True
+        elif user.is_authenticated:
+            return True
+        elif not user.is_authenticated:
+            response = {
+                "detail": "Please login to use the service.",
+            }
+            raise GenericAPIException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=response
+            )
+        return False
+
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        if request.method in self.SAFE_METHODS:
+            return True
+        if self.class_name(obj) == "User" and obj.email == user.email:
+            return True
+        for attr in self.attributes_to_check:
+            if hasattr(obj, attr):
+                attr_value = getattr(obj, attr)
+                if user == attr_value:
+                    return True
+                return False
         return False

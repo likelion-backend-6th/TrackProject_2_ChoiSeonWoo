@@ -1,13 +1,20 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from users.views import (
-    FollowViewSet,
-    ProfileViewSet,
+    TokenObtainPairView_,
+    TokenRefreshView_,
     SignUpView,
     LoginView,
     UserViewSet,
-    TokenObtainPairView_,
-    TokenRefreshView_,
+    ProfileViewSet,
+    FollowViewSet,
+    UserInfoView,
+    MyInfoView,
+    ProfileView,
+    FollowView,
+    FollowingView,
+    FollowerView,
+    FeedView,
 )
 
 router = DefaultRouter()
@@ -21,5 +28,12 @@ urlpatterns = [
     path("token/refresh/", TokenRefreshView_.as_view(), name="token_refresh"),
     path("signup/", SignUpView.as_view(), name="signup"),
     path("login/", LoginView.as_view(), name="login"),
+    path("others/", UserInfoView.as_view(), name="other_users"),
+    path("myinfo/", MyInfoView.as_view(), name="my_info"),
+    path("profile/", ProfileView.as_view(), name="my_profile"),
+    path("follow/<int:id>/", FollowView.as_view(), name="my_follow"),
+    path("following/", FollowingView.as_view(), name="my_following"),
+    path("follower/", FollowerView.as_view(), name="my_follower"),
+    path("feed/", FeedView.as_view(), name="feed"),
     path("", include(router.urls)),
 ]

@@ -28,7 +28,9 @@ class ImageS3UploadTestCase(TestCase):
         validated_data = {"image": sample_image}
         result = image_s3_upload(validated_data)
 
-        self.assertTrue(result.get("image_url").startswith("https://"))
+        self.assertTrue(
+            result.get("image_url").startswith("https://kr.object.ncloudstorage.com")
+        )
 
         s3_client.upload_fileobj.assert_called_once()
         s3_client.put_object_acl.assert_called_once()
