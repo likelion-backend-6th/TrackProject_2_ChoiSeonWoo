@@ -177,8 +177,8 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = PostSerializer(posts, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=["get"], url_path="following-posts")
-    def following_posts(self, request: Request, *args, **kwargs):
+    @action(detail=True, methods=["get"], url_path="feed")
+    def feed(self, request: Request, *args, **kwargs):
         user: User = self.get_object()
         following = user.following.all()
         posts = Post.objects.filter(author__in=following)
@@ -212,6 +212,25 @@ class FollowViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
+    def create(self, request: Request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            validated_data = serializer.validated_data
+            qs = Follow.objects.filter(**validated_data)
+            if qs.exists():
+                qs.delete()
+                return Response(
+                    data={"message": "Unfollowed successfully"},
+                    status=status.HTTP_204_NO_CONTENT,
+                )
+
+            serializer.save()
+            return Response(
+                data={"message": "Followed successfully"},
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 @extend_schema(tags=["My"])
 class UserInfoView(APIView):
@@ -239,7 +258,7 @@ class MyInfoView(APIView):
 
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "modified success"}, status=status.HTTP_200_OK)
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -251,11 +270,13 @@ class ProfileView(APIView):
         user: User = request.user
         profile = user.profile
 
-        serializer = self.get_serializer(profile)
+        serializer = self.serializer_class(profile)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.serializer_class(
+            data=request.data, context={"request": request}
+        )
 
         if serializer.is_valid():
             serializer.save()
@@ -271,8 +292,10 @@ class ProfileView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@extend_schema(tags=["My"], operation_id="follow_view")
+@extend_schema(tags=["My"])
 class FollowView(APIView):
+    serializer_class = FollowSerializer
+
     def post(self, request, id):
         user: User = request.user
 
@@ -293,33 +316,33 @@ class FollowView(APIView):
         )
 
 
-@extend_schema(tags=["My"], operation_id="following_view")
+@extend_schema(tags=["My"])
 class FollowingView(APIView):
     serializer_class = UserSerializer
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = DjangoFilterBackend
     filterset_class = UserFilter
 
     def get(self, request):
         user: User = request.user
         following = user.following.all()
-        queryset = self.filter_queryset(following)
+        queryset = self.filter_backends().filter_queryset(request, following, self)
 
         serializer = self.serializer_class(queryset, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=["My"], operation_id="follower_view")
+@extend_schema(tags=["My"])
 class FollowerView(APIView):
     serializer_class = UserSerializer
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = DjangoFilterBackend
     filterset_class = UserFilter
 
     def get(self, request):
         user: User = request.user
         follower = user.follower.all()
-        queryset = self.filter_queryset(follower)
+        queryset = self.filter_backends().filter_queryset(request, follower, self)
 
-        serializer = self.get_serializer(queryset, many=True)
+        serializer = self.serializer_class(queryset, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
