@@ -259,7 +259,7 @@ class ProfileView(APIView):
 
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "modified success"}, status=status.HTTP_200_OK)
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request):
@@ -267,7 +267,7 @@ class ProfileView(APIView):
 
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "modified success"}, status=status.HTTP_200_OK)
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -281,7 +281,8 @@ class FollowView(APIView):
 
         if created:
             return Response(
-                data={"message": "Follow successfully"}, status=status.HTTP_201_CREATED
+                data={"message": "Followed successfully"},
+                status=status.HTTP_201_CREATED,
             )
 
         follow.delete()
