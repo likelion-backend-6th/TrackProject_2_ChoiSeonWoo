@@ -258,9 +258,9 @@
 
 > [📜 `OpenAPI` URL](http://be-lb-staging-19480782-5e27276c4a42.kr.lb.naverncp.com/api/docs/)
 
-### [🏳‍🌈 `production` Server URL](http://be-lb-prod-19480757-e92e545ff666.kr.lb.naverncp.com)
+### ~~[🏳‍🌈 `production` Server URL]()~~ 현재 미구동 중
 
-> [📜 `OpenAPI` URL](http://be-lb-prod-19480757-e92e545ff666.kr.lb.naverncp.com/api/docs/)
+> ~~[📜 `OpenAPI` URL]()~~ 현재 미구동 중
 
 
 
@@ -377,6 +377,13 @@
 - [x]  Test 시나리오 작성
 - [x]  Test Code 작성 및 실행
 
+### 1️⃣1️⃣ Terraform (2)
+
+- [x]  Terraform을 이용한 S3 버킷 생성 살펴보기
+- [x]  AWS S3 버킷 생성을 위한 Terraform 코드 작업
+- [x]  테스트용 Django 앱 및 S3 버킷 리소스 생성을 통한 테스트
+- [x]  현재 프로젝트 내 Terraform 코드 작성
+- [x]  Terraform으로 리소스 생성 및 확인
 
 
 <br>
@@ -404,7 +411,8 @@
 - [15. (❓❗ Q&A) Mocking (2)](https://notion.so/28565c259b02432687e46b71704a9735)
 - [16. (🐞 BUG) TestCode - Mocking](https://notion.so/ba4877b4c33e49909e28de18ab313dcb)
 - [17. (👑 FEATURE) Refactor](https://notion.so/3b5063b7350c4950bea326f0e0e13da2)
-
+- [18. (👑 FEATURE) Terraform - AWS S3](https://notion.so/fd6008e863ca447c87de28bf04c6f20a)
+- 
 
 <br>
 
@@ -419,13 +427,10 @@
 > - NCloud Container Registry에 생성한 Registry가 존재 
 
 
-### 1. 아래 문서를 참고하여 `NCLOUD Object Storage` 버킷과 `AWS S3` 버킷 생성
+### 1. 아래 문서를 참고하여 `NCLOUD Object Storage` 버킷과  생성
 
 - [NCloud Object Storage 버킷 생성](https://www.notion.so/browneyed/12-Image-2d88d0e5590d46368c817d08c3967b20?pvs=4#618e69a5cf6f4d0db92de94bb8a786a2)
   - Terraform에서 NCloud Object Storage 리소스 생성을 지원하지 않아 수동으로 생성 (2023.09 기준)
-
-- [AWS AWS S3 버킷 생성](https://www.notion.so/browneyed/12-Image-2d88d0e5590d46368c817d08c3967b20?pvs=4#22e50e4b4f7f4c05983056ed0c3c25b1)
-  - 시간관계상 AWS S3 버킷 생성의 경우 IaC 대상에서 제외 → 2차에서작업 예정
 
 ### 2. git clone 후 아래 순서대로 진행
 
@@ -445,7 +450,7 @@ NCP_S3_BUCKET_NAME=<NCloud Object Storage에서 생성한 버킷 이름>
 AWS_ACCESS_KEY_ID=<AWS IAM 계정의 Access Key>
 AWS_SECRET_ACCESS_KEY=<AWS IAM 계정의 Access Key>
 AWS_REGION=ap-northeast-2
-AWS_STORAGE_BUCKET_NAME=<1에서 생성한 AWS S3 버킷 이름>
+AWS_STORAGE_BUCKET_NAME="<name>-<env>" # infra/AWS/modules/s3/staging/main.tf 참고
 ```
 
 **b. docker image 생성 및 NCloud Container Registry 로그인 후 push**
@@ -501,10 +506,12 @@ ncp_s3_bucket_name="<NCloud Object Storage에서 생성한 버킷 이름>"
 aws_access_key_id="<AWS IAM 계정의 Access Key>"
 aws_secret_access_key="<AWS IAM 계정의 Access Key>"
 aws_region="ap-northeast-2"
-aws_storage_bucket_name="<1에서 생성한 AWS S3 버킷 이름>"
+aws_storage_bucket_name="<'a'에서 지정한 AWS_STORAGE_BUCKET_NAME>"
 ```
 
 **e. Terraform 명령어를 실행하여 인프라 구축**
+
+- AWS 리소스 생성
 
 ```
 cd infra/NCP/stage/staging
@@ -516,15 +523,36 @@ terraform init
 terraform apply
 ```
 
-**f. `terraform apply` 의 결과로, 터미널 창에 아래와 같이 출력됨**
+- NCP 리소스 생성
 
 ```
-Outputs:
+cd ../../../..
+cd infra/NCP/stage/staging
+```
+```
+terraform init
+```
+```
+terraform apply
+```
 
-be_lb_domain = "<Load Balancer 주소>"
-be_public_ip = "<Django 서버 Host 주소>"
-db_public_ip = "<PostgreSQL DB 서버 Host 주소>"
-``` 
+
+**f. `terraform apply` 의 결과로, 터미널 창에 아래와 같이 출력됨**
+
+- AWS
+```
+Changes to Outputs:
+  + bucket_bucket_regional_dns = "<버킷명>.s3.ap-northeast-2.amazonaws.com"
+```
+
+- NCP
+```
+Changes to Outputs:
+  + be_lb_domain = "<Load Balancer 주소>"
+  + be_public_ip = "<Django 서버 Host 주소>"
+  + db_public_ip = "<PostgreSQL DB 서버 Host 주소>"
+```
+
 
 **g. ssh 를 이용하여 Django 서버에 원격 접속**
 
