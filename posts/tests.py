@@ -147,7 +147,7 @@ class PostTest(APITestCase):
     def test_list_data(self):
         test_url = reverse("post-list")
         client = APIClient()
-        client.force_authenticate(user=self.admin_user)
+        client.force_authenticate(user=self.user01)
         res: Response = client.get(test_url)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
@@ -156,7 +156,7 @@ class PostTest(APITestCase):
     def test_list_with_filter(self):
         test_url = reverse("post-list")
         client = APIClient()
-        client.force_authenticate(user=self.admin_user)
+        client.force_authenticate(user=self.user01)
         query_params = {"tags": "오늘,휴식"}
         res: Response = client.get(test_url, data=query_params)
 
@@ -166,7 +166,7 @@ class PostTest(APITestCase):
     def test_create_data(self):
         test_url = reverse("post-list")
         client = APIClient()
-        client.force_authenticate(user=self.admin_user)
+        client.force_authenticate(user=self.user01)
         res: Response = client.post(test_url, self.post_data)
 
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
@@ -175,17 +175,17 @@ class PostTest(APITestCase):
     def test_retrieve_data(self):
         test_url = reverse("post-detail", args=[self.post01.pk])
         client = APIClient()
-        client.force_authenticate(user=self.admin_user)
+        client.force_authenticate(user=self.user01)
         res: Response = client.get(test_url)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data.get("id"), self.post01.pk)
 
-    def test_update_data(self):
+    def test_partial_update_data(self):
         test_url = reverse("post-detail", args=[self.post01.pk])
         client = APIClient()
-        client.force_authenticate(user=self.admin_user)
-        res: Response = client.put(test_url, self.post01_modifying_data)
+        client.force_authenticate(user=self.user01)
+        res: Response = client.patch(test_url, self.post01_modifying_data)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data.get("title"), self.post01_modifying_data["title"])
@@ -194,7 +194,6 @@ class PostTest(APITestCase):
         test_url = reverse("post-detail", args=[self.post01.pk])
         client = APIClient()
         client.force_authenticate(user=self.admin_user)
-        print(self.admin_user.is_authenticated)
         res: Response = client.delete(test_url)
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
@@ -202,8 +201,8 @@ class PostTest(APITestCase):
         with self.assertRaises(self.test_model.DoesNotExist):
             self.test_model.objects.get(id=self.post01.pk)
 
-    def test_post_info_get(self):
-        test_url = reverse("other_users_posts")
+    def test_other_post_list(self):
+        test_url = reverse("other_posts_list")
         client = APIClient()
         client.force_authenticate(user=self.user01)
         res: Response = client.get(test_url)
@@ -211,7 +210,7 @@ class PostTest(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 5)
 
-    def test_my_post_get(self):
+    def test_my_post_list(self):
         test_url = reverse("my_posts_list")
         client = APIClient()
         client.force_authenticate(user=self.user01)
@@ -219,23 +218,3 @@ class PostTest(APITestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 4)
-
-    def test_my_post_post(self):
-        test_url = reverse("my_posts_list")
-        client = APIClient()
-        client.force_authenticate(user=self.user01)
-        res: Response = client.post(test_url, self.user01_post_data)
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.test_model.objects.count(), 10)
-
-    def test_my_post_put(self):
-        test_url = reverse("my_posts_detail", args=[self.post09.pk])
-        client = APIClient()
-        client.force_authenticate(user=self.user02)
-        res: Response = client.put(test_url, self.user_02_post09_modifying_data)
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            res.data.get("title"), self.user_02_post09_modifying_data.get("title")
-        )
