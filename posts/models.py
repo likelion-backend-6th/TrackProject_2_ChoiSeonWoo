@@ -28,8 +28,7 @@ class Post(CommonModel):
     author = models.ForeignKey(
         "users.User",
         verbose_name="작성자",
-        on_delete=models.SET_NULL,
-        null=True,
+        on_delete=models.CASCADE,
         related_name="posts",
     )
     body = models.TextField(verbose_name="본문")
@@ -75,8 +74,7 @@ class Comment(CommonModel):
     author = models.ForeignKey(
         "users.User",
         verbose_name="작성자",
-        on_delete=models.SET_NULL,
-        null=True,
+        on_delete=models.CASCADE,
         related_name="comments",
     )
     body = models.TextField(verbose_name="본문")
