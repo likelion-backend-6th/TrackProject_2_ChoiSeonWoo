@@ -70,7 +70,7 @@ class User(CommonModel, AbstractBaseUser, PermissionsMixin):
         return self.is_admin
 
 
-class Profile(CommonModel, models.Model):
+class Profile(CommonModel):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, verbose_name="유저", related_name="profile"
     )

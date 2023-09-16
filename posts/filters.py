@@ -1,6 +1,6 @@
 from django_filters import rest_framework as filters
 
-from posts.models import Post
+from posts.models import Comment, Post
 
 
 class PostFilter(filters.FilterSet):
@@ -25,3 +25,14 @@ class PostFilter(filters.FilterSet):
             result = result.filter(tags__name=tag)
 
         return result
+
+
+class CommentFilter(filters.FilterSet):
+    nickname = filters.CharFilter(
+        field_name="author__profile__nickname", lookup_expr="icontains"
+    )
+    body = filters.CharFilter(field_name="body", lookup_expr="icontains")
+
+    class Meta:
+        model = Comment
+        fields = ["nickname", "body"]

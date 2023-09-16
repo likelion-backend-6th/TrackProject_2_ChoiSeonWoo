@@ -6,7 +6,7 @@ from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from rest_framework.response import Response
 
-from posts.models import Post
+from posts.models import Comment, Post
 
 
 class PostModelTestCase(APITestCase):
@@ -144,7 +144,36 @@ class PostTest(APITestCase):
             "body": "새글 수정 완료",
         }
 
-    def test_list_data(self):
+        cls.comment01 = Comment.objects.create(
+            post=cls.post01, author=cls.user01, body="user01의 첫 번째 댓글"
+        )
+        cls.comment02 = Comment.objects.create(
+            post=cls.post06, author=cls.user01, body="user01의 두 번째 댓글"
+        )
+        cls.comment03 = Comment.objects.create(
+            post=cls.post09, author=cls.user01, body="user01의 세 번째 댓글"
+        )
+        cls.comment04 = Comment.objects.create(
+            post=cls.post05, author=cls.user02, body="user02의 첫 번째 댓글"
+        )
+        cls.comment05 = Comment.objects.create(
+            post=cls.post01, author=cls.user02, body="user02의 두 번째 댓글"
+        )
+        cls.comment06 = Comment.objects.create(
+            post=cls.post08, author=cls.admin_user, body="admin_user의 첫 번째 댓글"
+        )
+
+        cls.comment_data = {
+            "author": 2,
+            "body": "새댓글 작성 완료",
+        }
+
+        cls.comment01_modifying_data = {
+            "author": 2,
+            "body": "댓글 수정 완료",
+        }
+
+    def test_post_list_data(self):
         test_url = reverse("post-list")
         client = APIClient()
         client.force_authenticate(user=self.user01)
@@ -153,7 +182,7 @@ class PostTest(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), self.test_model.objects.count())
 
-    def test_list_with_filter(self):
+    def test_post_list_with_filter(self):
         test_url = reverse("post-list")
         client = APIClient()
         client.force_authenticate(user=self.user01)
@@ -163,7 +192,7 @@ class PostTest(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 3)
 
-    def test_create_data(self):
+    def test_post_create_data(self):
         test_url = reverse("post-list")
         client = APIClient()
         client.force_authenticate(user=self.user01)
@@ -172,7 +201,7 @@ class PostTest(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(self.test_model.objects.count(), 10)
 
-    def test_retrieve_data(self):
+    def test_post_retrieve_data(self):
         test_url = reverse("post-detail", args=[self.post01.pk])
         client = APIClient()
         client.force_authenticate(user=self.user01)
@@ -181,7 +210,7 @@ class PostTest(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data.get("id"), self.post01.pk)
 
-    def test_partial_update_data(self):
+    def test_post_partial_update_data(self):
         test_url = reverse("post-detail", args=[self.post01.pk])
         client = APIClient()
         client.force_authenticate(user=self.user01)
@@ -190,7 +219,7 @@ class PostTest(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data.get("title"), self.post01_modifying_data["title"])
 
-    def test_delete_data(self):
+    def test_post_delete_data(self):
         test_url = reverse("post-detail", args=[self.post01.pk])
         client = APIClient()
         client.force_authenticate(user=self.admin_user)
@@ -200,6 +229,76 @@ class PostTest(APITestCase):
         self.assertEqual(self.test_model.objects.count(), 8)
         with self.assertRaises(self.test_model.DoesNotExist):
             self.test_model.objects.get(id=self.post01.pk)
+
+    def test_comment_list_data(self):
+        test_url = reverse("post-comments-list", args=[self.post01.pk])
+        client = APIClient()
+        client.force_authenticate(user=self.user01)
+        res: Response = client.get(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            len(res.data), Comment.objects.filter(post_id=self.post01.pk).count()
+        )
+
+    def test_comment_list_with_filter(self):
+        test_url = reverse("post-comments-list", args=[self.post01.pk])
+        client = APIClient()
+        client.force_authenticate(user=self.user01)
+        query_params = {"body": "첫 번째"}
+        res: Response = client.get(test_url, data=query_params)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            len(res.data),
+            Comment.objects.filter(
+                post_id=self.post01.pk, body__icontains="첫 번째"
+            ).count(),
+        )
+
+    def test_comment_create_data(self):
+        test_url = reverse("post-comments-list", args=[self.post01.pk])
+        client = APIClient()
+        client.force_authenticate(user=self.user01)
+        res: Response = client.post(test_url, self.comment_data)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Comment.objects.filter(post_id=self.post01.pk).count(), 3)
+
+    def test_comment_retrieve_data(self):
+        test_url = reverse(
+            "post-comments-detail", args=[self.post01.pk, self.comment01.pk]
+        )
+        client = APIClient()
+        client.force_authenticate(user=self.user01)
+        res: Response = client.get(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data.get("id"), self.comment01.pk)
+
+    def test_comment_partial_update_data(self):
+        test_url = reverse(
+            "post-comments-detail", args=[self.post01.pk, self.comment01.pk]
+        )
+        client = APIClient()
+        client.force_authenticate(user=self.user01)
+        res: Response = client.patch(test_url, self.comment01_modifying_data)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data.get("body"), self.comment01_modifying_data["body"])
+
+    def test_comment_delete_data(self):
+        test_url = reverse(
+            "post-comments-detail", args=[self.post01.pk, self.comment01.pk]
+        )
+        client = APIClient()
+        client.force_authenticate(user=self.admin_user)
+        res: Response = client.delete(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Comment.objects.count(), 5)
+        with self.assertRaises(self.test_model.DoesNotExist):
+            self.test_model.objects.get(id=self.comment01.pk)
 
     def test_other_post_list(self):
         test_url = reverse("other_posts_list")
@@ -218,3 +317,12 @@ class PostTest(APITestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 4)
+
+    def test_my_comment_list(self):
+        test_url = reverse("my_comments_list")
+        client = APIClient()
+        client.force_authenticate(user=self.user01)
+        res: Response = client.get(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 3)
