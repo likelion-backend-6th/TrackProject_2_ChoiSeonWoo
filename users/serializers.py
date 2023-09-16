@@ -49,12 +49,14 @@ class UserSerializer(serializers.ModelSerializer):
             "is_active",
             "is_admin",
         )
-        extra_kwargs = {"password": {"write_only": True}}
+        extra_kwargs = {
+            "password": {"write_only": True},
+            "fullname": {"required": False},
+            "phone": {"required": False},
+        }
 
         read_only_fields = (
             "email",
-            "is_active",
-            "is-admin",
             "created_at",
             "updated_at",
         )
@@ -71,14 +73,20 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
-class ProfilesSerializer(serializers.ModelSerializer):
+class UserProfileSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(required=False, write_only=True)
+    user_info = serializers.SerializerMethodField()
+
+    def get_user_info(self, obj):
+        user = obj.user
+        return UserSerializer(user).data
 
     class Meta:
         model = Profile
         fields = (
             "id",
             "user",
+            "user_info",
             "nickname",
             "birthday",
             "image",
@@ -95,6 +103,7 @@ class ProfilesSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
+        extra_kwargs = {"user": {"write_only": True}}
 
     def create(self, validated_data):
         validated_data = image_s3_upload(validated_data)
@@ -146,7 +155,14 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 
 class UserInfoSerializer(serializers.ModelSerializer):
-    profile = ProfileSerializer()
+    profile = serializers.SerializerMethodField()
+
+    def get_profile(self, obj: Profile):
+        try:
+            profile = obj.profile
+            return ProfileSerializer(profile).data
+        except Profile.DoesNotExist:
+            return None
 
     class Meta:
         model = User
@@ -161,6 +177,17 @@ class UserInfoSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
+        read_only_fields = (
+            "email",
+            "profile",
+            "is_active",
+            "created_at",
+            "updated_at",
+        )
+        extra_kwargs = {
+            "fullname": {"required": False},
+            "phone": {"required": False},
+        }
 
 
 class FollowSerializer(serializers.ModelSerializer):
