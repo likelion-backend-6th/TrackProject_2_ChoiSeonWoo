@@ -612,6 +612,11 @@ class OtherUserRelatedViewTest(APITestCase):
             password="password",
         )
 
+        cls.user05_modifying_data = {
+            "phone": "01333434343",
+            "password": "password",
+        }
+
         cls.profile01 = Profile.objects.create(
             user=cls.user01, nickname="UserProfile01", birthday=datetime.now().date()
         )
@@ -673,7 +678,7 @@ class OtherUserRelatedViewTest(APITestCase):
             body="user05의 2번째 작성 글",
         )
 
-    def test_user_info_view(self):
+    def test_other_user_info_view(self):
         test_url = reverse("other_users")
         client = APIClient()
         client.force_authenticate(user=self.user01)
@@ -684,7 +689,7 @@ class OtherUserRelatedViewTest(APITestCase):
             len(res.data), self.test_model.objects.exclude(id=self.user01.id).count()
         )
 
-    def test_my_info_view(self):
+    def test_my_info_view_get(self):
         test_url = reverse("my_info")
         client = APIClient()
         client.force_authenticate(user=self.user01)
@@ -693,7 +698,27 @@ class OtherUserRelatedViewTest(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data.get("id"), self.user01.id)
 
-    def test_profile_view_get(self):
+    def test_my_info_view_patch(self):
+        test_url = reverse("my_info")
+        client = APIClient()
+        client.force_authenticate(user=self.user05)
+        res: Response = client.patch(test_url, self.user05_modifying_data)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data.get("phone"), self.user05_modifying_data["phone"])
+
+    def test_other_profile_view(self):
+        test_url = reverse("other_profile")
+        client = APIClient()
+        client.force_authenticate(user=self.user01)
+        res: Response = client.get(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            len(res.data), Profile.objects.exclude(user=self.user01).count()
+        )
+
+    def test_my_profile_view_get(self):
         test_url = reverse("my_profile")
         client = APIClient()
         client.force_authenticate(user=self.user01)
@@ -702,7 +727,7 @@ class OtherUserRelatedViewTest(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data.get("id"), self.user01.profile.id)
 
-    def test_profile_view_post(self):
+    def test_my_profile_view_post(self):
         test_url = reverse("my_profile")
         client = APIClient()
         client.force_authenticate(user=self.user05)
@@ -711,16 +736,18 @@ class OtherUserRelatedViewTest(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(Profile.objects.count(), 5)
 
-    def test_profile_view_put(self):
+    def test_my_profile_view_patch(self):
         test_url = reverse("my_profile")
         client = APIClient()
         client.force_authenticate(user=self.user04)
-        res: Response = client.put(test_url, self.profile04_modifying_data)
+        res: Response = client.patch(test_url, self.profile04_modifying_data)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data.get("id"), self.profile04.id)
+        self.assertEqual(
+            res.data.get("nickname"), self.profile04_modifying_data["nickname"]
+        )
 
-    def test_follow_view_follow(self):
+    def test_my_follow_view_follow(self):
         test_url = reverse("my_follow", args=[self.user05.pk])
         client = APIClient()
         client.force_authenticate(user=self.user01)
@@ -729,7 +756,7 @@ class OtherUserRelatedViewTest(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Follow.objects.count(), 7)
 
-    def test_follow_view_unfollow(self):
+    def test_my_follow_view_unfollow(self):
         test_url = reverse("my_follow", args=[self.user02.pk])
         client = APIClient()
         client.force_authenticate(user=self.user01)
@@ -738,7 +765,7 @@ class OtherUserRelatedViewTest(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Follow.objects.count(), 5)
 
-    def test_following_view(self):
+    def test_my_following_view(self):
         test_url = reverse("my_following")
         client = APIClient()
         client.force_authenticate(user=self.user01)
@@ -747,7 +774,7 @@ class OtherUserRelatedViewTest(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 3)
 
-    def test_follower_view(self):
+    def test_my_follower_view(self):
         test_url = reverse("my_follower")
         client = APIClient()
         client.force_authenticate(user=self.user01)
@@ -756,8 +783,8 @@ class OtherUserRelatedViewTest(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 1)
 
-    def test_feed_view(self):
-        test_url = reverse("feed")
+    def test_my_feed_view(self):
+        test_url = reverse("my_feed")
         client = APIClient()
         client.force_authenticate(user=self.user01)
         res: Response = client.get(test_url)
