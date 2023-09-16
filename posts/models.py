@@ -12,7 +12,7 @@ class PublishedManager(models.Manager):
         return super().get_queryset().filter(status=Post.Status.PUBLISHED)
 
 
-class Post(CommonModel, models.Model):
+class Post(CommonModel):
     class StatusChoices(models.IntegerChoices):
         DRAFT = 0
         PUBLISHED = 1
@@ -66,3 +66,28 @@ class Post(CommonModel, models.Model):
     def save(self, *args, **kwargs):
         self.slug = self.unique_slug_generator()
         super().save(*args, **kwargs)
+
+
+class Comment(CommonModel):
+    post = models.ForeignKey(
+        Post, verbose_name="댓글", on_delete=models.CASCADE, related_name="comments"
+    )
+    author = models.ForeignKey(
+        "users.User",
+        verbose_name="작성자",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="comments",
+    )
+    body = models.TextField(verbose_name="본문")
+
+    class Meta:
+        verbose_name = "게시글"
+        verbose_name_plural = "게시글 목록"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.body[:10]}.." if len(self.body) > 10 else self.body
