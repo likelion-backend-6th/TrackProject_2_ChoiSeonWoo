@@ -411,8 +411,9 @@
 - [15. (❓❗ Q&A) Mocking (2)](https://notion.so/28565c259b02432687e46b71704a9735)
 - [16. (🐞 BUG) TestCode - Mocking](https://notion.so/ba4877b4c33e49909e28de18ab313dcb)
 - [17. (👑 FEATURE) Refactor](https://notion.so/3b5063b7350c4950bea326f0e0e13da2)
-- [18. (👑 FEATURE) Terraform - AWS S3](https://notion.so/fd6008e863ca447c87de28bf04c6f20a)
-- 
+- [18. (🏰 INFRA) Terraform - AWS S3](https://notion.so/fd6008e863ca447c87de28bf04c6f20a)
+- [19. (📺 PLAN) DB 및 API 추가 설계](https://notion.so/198d2b2898354246aa12c73ddc88fd22)
+- [20. (👑 FEATURE) Comment](https://notion.so/c7e4103eb94343968a56c2d1786beb6e)
 
 <br>
 
