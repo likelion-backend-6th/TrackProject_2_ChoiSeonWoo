@@ -1,21 +1,24 @@
 from django.shortcuts import get_object_or_404
+
 from rest_framework.response import Response
 from rest_framework import status, viewsets
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
 from drf_spectacular.utils import extend_schema
-from common.permissions import IsAdminOrReadOnly
+
+from django_filters.rest_framework import DjangoFilterBackend
 
 from posts.models import Post
 from posts.serializers import PostSerializer
 from posts.filters import PostFilter
+from posts.permissions import CommonUserPermission
 from users.models import User
 
 
-@extend_schema(tags=["Post"])
+@extend_schema(tags=["05. Post"])
 class PostViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [CommonUserPermission]
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     filterset_class = PostFilter
@@ -26,41 +29,30 @@ class PostViewSet(viewsets.ModelViewSet):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=["My"])
-class PostInfoView(APIView):
+@extend_schema(tags=["01. My - Post"])
+class OtherPostListView(APIView):
     serializer_class = PostSerializer
+    filter_backends = DjangoFilterBackend
+    filterset_class = PostFilter
 
     def get(self, request):
         posts = Post.objects.exclude(author=request.user)
+        queryset = self.filter_backends().filter_queryset(request, posts, self)
 
-        serializer = self.serializer_class(posts, many=True)
+        serializer = self.serializer_class(queryset, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=["My"])
-class MyPostView(APIView):
+@extend_schema(tags=["01. My - Post"])
+class MyPostListView(APIView):
     serializer_class = PostSerializer
+    filter_backends = DjangoFilterBackend
+    filterset_class = PostFilter
 
     def get(self, request):
         user: User = request.user
         posts = user.posts.all()
+        queryset = self.filter_backends().filter_queryset(request, posts, self)
 
-        serializer = self.serializer_class(posts, many=True)
+        serializer = self.serializer_class(queryset, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request):
-        serializer = self.serializer_class(data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(data=serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def put(self, request, id):
-        post = get_object_or_404(Post, author=request.user, id=id)
-        serializer = self.serializer_class(post, data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(data=serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
