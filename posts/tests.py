@@ -2,12 +2,13 @@ from unittest.mock import MagicMock, patch
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from django.contrib.contenttypes.models import ContentType
 
 from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from rest_framework.response import Response
 
-from posts.models import Comment, Image, Post
+from posts.models import Comment, Image, Like, Post
 from common.test import create_sample_image
 
 
@@ -204,6 +205,68 @@ class PostTest(APITestCase):
             post=cls.post08,
             author=cls.user02,
             image_url="https://kr.object.ncloudstorage.com/swns/test05.jpg",
+        )
+
+        cls.post_like01 = Like.objects.create(
+            content_type=ContentType.objects.get_for_model(Post),
+            object_id=cls.post01.id,
+            user=cls.admin_user,
+        )
+        cls.post_like02 = Like.objects.create(
+            content_type=ContentType.objects.get_for_model(Post),
+            object_id=cls.post06.id,
+            user=cls.user01,
+        )
+        cls.post_like03 = Like.objects.create(
+            content_type=ContentType.objects.get_for_model(Post),
+            object_id=cls.post09.id,
+            user=cls.user01,
+        )
+        cls.post_like04 = Like.objects.create(
+            content_type=ContentType.objects.get_for_model(Post),
+            object_id=cls.post02.id,
+            user=cls.user02,
+        )
+        cls.post_like05 = Like.objects.create(
+            content_type=ContentType.objects.get_for_model(Post),
+            object_id=cls.post05.id,
+            user=cls.user02,
+        )
+        cls.post_like06 = Like.objects.create(
+            content_type=ContentType.objects.get_for_model(Post),
+            object_id=cls.post08.id,
+            user=cls.user02,
+        )
+
+        cls.comment_like01 = Like.objects.create(
+            content_type=ContentType.objects.get_for_model(Comment),
+            object_id=cls.comment01.id,
+            user=cls.admin_user,
+        )
+        cls.comment_like02 = Like.objects.create(
+            content_type=ContentType.objects.get_for_model(Comment),
+            object_id=cls.comment04.id,
+            user=cls.admin_user,
+        )
+        cls.comment_like03 = Like.objects.create(
+            content_type=ContentType.objects.get_for_model(Comment),
+            object_id=cls.comment06.id,
+            user=cls.admin_user,
+        )
+        cls.comment_like04 = Like.objects.create(
+            content_type=ContentType.objects.get_for_model(Comment),
+            object_id=cls.comment01.id,
+            user=cls.user01,
+        )
+        cls.comment_like05 = Like.objects.create(
+            content_type=ContentType.objects.get_for_model(Comment),
+            object_id=cls.comment05.id,
+            user=cls.user01,
+        )
+        cls.comment_like06 = Like.objects.create(
+            content_type=ContentType.objects.get_for_model(Comment),
+            object_id=cls.comment01.id,
+            user=cls.user02,
         )
 
     def test_post_list_data(self):
@@ -433,3 +496,89 @@ class PostTest(APITestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 2)
+
+    def test_post_like_data(self):
+        test_url = reverse("my_like_post", args=[self.post02.pk])
+        client = APIClient()
+        client.force_authenticate(user=self.admin_user)
+        res: Response = client.post(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            Like.objects.filter(
+                content_type=ContentType.objects.get_for_model(Post)
+            ).count(),
+            7,
+        )
+
+    def test_post_unlike_data(self):
+        test_url = reverse("my_like_post", args=[self.post01.pk])
+        client = APIClient()
+        client.force_authenticate(user=self.admin_user)
+        res: Response = client.post(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(
+            Like.objects.filter(
+                content_type=ContentType.objects.get_for_model(Post)
+            ).count(),
+            5,
+        )
+
+    def test_comment_like_data(self):
+        test_url = reverse("my_like_comment", args=[self.comment02.pk])
+        client = APIClient()
+        client.force_authenticate(user=self.admin_user)
+        res: Response = client.post(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            Like.objects.filter(
+                content_type=ContentType.objects.get_for_model(Comment)
+            ).count(),
+            7,
+        )
+
+    def test_comment_unlike_data(self):
+        test_url = reverse("my_like_comment", args=[self.comment01.pk])
+        client = APIClient()
+        client.force_authenticate(user=self.admin_user)
+        res: Response = client.post(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(
+            Like.objects.filter(
+                content_type=ContentType.objects.get_for_model(Comment)
+            ).count(),
+            5,
+        )
+
+    def test_my_like_post_list_data(self):
+        test_url = reverse("my_liked_posts")
+        client = APIClient()
+        client.force_authenticate(user=self.user01)
+        res: Response = client.get(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            Like.objects.filter(
+                content_type=ContentType.objects.get_for_model(Post),
+                user=self.user01,
+            ).count(),
+            2,
+        )
+
+    def test_my_like_comment_list_data(self):
+        test_url = reverse("my_liked_comments")
+        client = APIClient()
+        client.force_authenticate(user=self.user01)
+        res: Response = client.get(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            Like.objects.filter(
+                content_type=ContentType.objects.get_for_model(Comment),
+                user=self.user01,
+            ).count(),
+            2,
+        )
