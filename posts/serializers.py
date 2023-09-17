@@ -102,9 +102,9 @@ class PostSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
-        tags_data = validated_data.pop("tags", [])
-        instance = self.Meta.model.objects.create(**validated_data)
-        instance.tags.add(*tags_data)
+        tag_list = validated_data.pop("tags", [])
+        instance = super().create(validated_data)
+        instance.tags.add(*tag_list)
 
         return instance
 
