@@ -8,14 +8,6 @@ from users.views import (
     UserViewSet,
     ProfileViewSet,
     FollowViewSet,
-    MyInfoView,
-    OtherUserInfoView,
-    ProfileView,
-    OtherProfileView,
-    FollowView,
-    FollowingView,
-    FollowerView,
-    FeedView,
 )
 
 router = DefaultRouter()
@@ -29,13 +21,5 @@ urlpatterns = [
     path("token/refresh/", TokenRefreshView_.as_view(), name="token_refresh"),
     path("signup/", SignUpView.as_view(), name="signup"),
     path("login/", LoginView.as_view(), name="login"),
-    path("my/", MyInfoView.as_view(), name="my_info"),
-    path("others/", OtherUserInfoView.as_view(), name="other_users"),
-    path("my/profile/", ProfileView.as_view(), name="my_profile"),
-    path("others/profile/", OtherProfileView.as_view(), name="other_profile"),
-    path("my/follow/<int:id>/", FollowView.as_view(), name="my_follow"),
-    path("my/following/", FollowingView.as_view(), name="my_following"),
-    path("my/follower/", FollowerView.as_view(), name="my_follower"),
-    path("my/feed/", FeedView.as_view(), name="my_feed"),
     path("", include(router.urls)),
 ]
