@@ -75,9 +75,9 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(required=False, write_only=True)
-    user_info = serializers.SerializerMethodField()
+    user = serializers.SerializerMethodField()
 
-    def get_user_info(self, obj):
+    def get_user(self, obj):
         user = obj.user
         return UserSerializer(user).data
 
@@ -86,7 +86,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "user",
-            "user_info",
             "nickname",
             "birthday",
             "image",
@@ -105,6 +104,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data = image_s3_upload(validated_data, "profile")
+        validated_data["user"] = self.context.get("user")
         instance = super().create(validated_data)
 
         return instance
