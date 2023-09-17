@@ -1,3 +1,4 @@
+from unittest.mock import MagicMock, patch
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -6,7 +7,8 @@ from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from rest_framework.response import Response
 
-from posts.models import Comment, Post
+from posts.models import Comment, Image, Post
+from common.test import create_sample_image
 
 
 class PostModelTestCase(APITestCase):
@@ -173,6 +175,37 @@ class PostTest(APITestCase):
             "body": "댓글 수정 완료",
         }
 
+        cls.image01 = Image.objects.create(
+            name="이미지01",
+            post=cls.post01,
+            author=cls.admin_user,
+            image_url="https://kr.object.ncloudstorage.com/swns/test01.jpg",
+        )
+        cls.image02 = Image.objects.create(
+            name="이미지02",
+            post=cls.post01,
+            author=cls.admin_user,
+            image_url="https://kr.object.ncloudstorage.com/swns/test02.jpg",
+        )
+        cls.image03 = Image.objects.create(
+            name="이미지03",
+            post=cls.post04,
+            author=cls.user01,
+            image_url="https://kr.object.ncloudstorage.com/swns/test03.jpg",
+        )
+        cls.image04 = Image.objects.create(
+            name="이미지04",
+            post=cls.post04,
+            author=cls.user01,
+            image_url="https://kr.object.ncloudstorage.com/swns/test04.jpg",
+        )
+        cls.image05 = Image.objects.create(
+            name="이미지05",
+            post=cls.post08,
+            author=cls.user02,
+            image_url="https://kr.object.ncloudstorage.com/swns/test05.jpg",
+        )
+
     def test_post_list_data(self):
         test_url = reverse("post-list")
         client = APIClient()
@@ -297,8 +330,64 @@ class PostTest(APITestCase):
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Comment.objects.count(), 5)
-        with self.assertRaises(self.test_model.DoesNotExist):
-            self.test_model.objects.get(id=self.comment01.pk)
+        with self.assertRaises(Comment.DoesNotExist):
+            Comment.objects.get(id=self.comment01.pk)
+
+    def test_image_list_data(self):
+        test_url = reverse("post-images-list", args=[self.post01.pk])
+        client = APIClient()
+        client.force_authenticate(user=self.user01)
+        res: Response = client.get(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            len(res.data), Image.objects.filter(post_id=self.post01.pk).count()
+        )
+
+    @patch("common.utils.Image.s3_client")
+    def test_image_create_data(self, s3_client: MagicMock):
+        test_url = reverse("post-images-list", args=[self.post01.pk])
+
+        s3_client.upload_fileobj.return_value = None
+        s3_client.put_object_acl.return_value = None
+
+        client = APIClient()
+        client.force_authenticate(user=self.admin_user)
+
+        sample_image = create_sample_image()
+
+        data = {
+            "name": sample_image.name,
+            "image": sample_image,
+        }
+
+        res: Response = client.post(test_url, data)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Image.objects.filter(post_id=self.post01.pk).count(), 3)
+        self.assertTrue(
+            res.data.get("image_url").startswith("https://kr.object.ncloudstorage.com")
+        )
+
+    def test_image_retrieve_data(self):
+        test_url = reverse("post-images-detail", args=[self.post01.pk, self.image01.pk])
+        client = APIClient()
+        client.force_authenticate(user=self.user01)
+        res: Response = client.get(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data.get("id"), self.image01.pk)
+
+    def test_image_delete_data(self):
+        test_url = reverse("post-images-detail", args=[self.post01.pk, self.image01.pk])
+        client = APIClient()
+        client.force_authenticate(user=self.admin_user)
+        res: Response = client.delete(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Image.objects.count(), 4)
+        with self.assertRaises(Image.DoesNotExist):
+            Image.objects.get(id=self.image01.pk)
 
     def test_other_post_list(self):
         test_url = reverse("other_posts_list")
@@ -326,3 +415,21 @@ class PostTest(APITestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 3)
+
+    def test_other_image_list(self):
+        test_url = reverse("other_images_list")
+        client = APIClient()
+        client.force_authenticate(user=self.user01)
+        res: Response = client.get(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 3)
+
+    def test_my_image_list(self):
+        test_url = reverse("my_images_list")
+        client = APIClient()
+        client.force_authenticate(user=self.user01)
+        res: Response = client.get(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 2)

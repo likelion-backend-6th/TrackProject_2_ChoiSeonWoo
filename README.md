@@ -385,6 +385,31 @@
 - [x]  현재 프로젝트 내 Terraform 코드 작성
 - [x]  Terraform으로 리소스 생성 및 확인
 
+### 1️⃣2️⃣ DB 및 API 추가 설계
+
+- [x]  추가 개발 기능 정의
+- [x]  추가 테이블 정의
+- [x]  ERD 작성
+- [x]  추가 API 설계 및 명세서 작성
+- [x]  테스트케이스 추가
+- [x]  추가 기능 개발 전, 수정사항 확인 및 작업
+
+### 1️⃣3️⃣ Comment
+
+- [x]  모델 생성 및 마이그레이션 적용
+- [x]  시리얼라이저 및 뷰 생성
+- [x]  필터 생성 및 적용
+- [x]  생성한 View의 URL 등록
+- [x]  테스트코드 작성 및 확인
+
+### 1️⃣4️⃣ Image(2)
+
+- [x]  모델 생성 및 마이그레이션 적용
+- [x]  이미지 업로드 모듈 수정
+- [x]  시리얼라이저 및 뷰 생성
+- [x]  생성한 View의 URL 등록
+- [x]  테스트코드 작성 및 확인
+
 
 <br>
 
@@ -414,6 +439,7 @@
 - [18. (🏰 INFRA) Terraform - AWS S3](https://notion.so/fd6008e863ca447c87de28bf04c6f20a)
 - [19. (📺 PLAN) DB 및 API 추가 설계](https://notion.so/198d2b2898354246aa12c73ddc88fd22)
 - [20. (👑 FEATURE) Comment](https://notion.so/c7e4103eb94343968a56c2d1786beb6e)
+- [21. (👑 FEATURE) Image (2)](https://notion.so/efbef538b8b44bb9acbe287c9a863a08)
 
 <br>
 
