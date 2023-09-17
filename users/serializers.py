@@ -98,21 +98,19 @@ class UserProfileSerializer(serializers.ModelSerializer):
         )
         read_only_fields = (
             "image_url",
-            "is_public",
-            "is_active",
             "created_at",
             "updated_at",
         )
         extra_kwargs = {"user": {"write_only": True}}
 
     def create(self, validated_data):
-        validated_data = image_s3_upload(validated_data)
+        validated_data = image_s3_upload(validated_data, "profile")
         instance = super().create(validated_data)
 
         return instance
 
     def update(self, instance, validated_data):
-        validated_data = image_s3_upload(validated_data)
+        validated_data = image_s3_upload(validated_data, "profile")
         instance = super().update(instance, validated_data)
 
         return instance
@@ -141,14 +139,14 @@ class ProfileSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
-        validated_data = image_s3_upload(validated_data)
+        validated_data = image_s3_upload(validated_data, "profile")
         validated_data["user"] = self.context.get("request").user
         instance = super().create(validated_data)
 
         return instance
 
     def update(self, instance, validated_data):
-        validated_data = image_s3_upload(validated_data)
+        validated_data = image_s3_upload(validated_data, "profile")
         instance = super().update(instance, validated_data)
 
         return instance
@@ -179,8 +177,6 @@ class UserInfoSerializer(serializers.ModelSerializer):
         )
         read_only_fields = (
             "email",
-            "profile",
-            "is_active",
             "created_at",
             "updated_at",
         )
