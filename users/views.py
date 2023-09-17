@@ -102,7 +102,7 @@ class TokenRefreshView_(TokenRefreshView):
     pass
 
 
-@extend_schema(tags=["02. User"])
+@extend_schema(tags=["03. User"])
 class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
     queryset = User.objects.all()
@@ -187,7 +187,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=["03. Profile"])
+@extend_schema(tags=["04. Profile"])
 class ProfileViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
     queryset = Profile.objects.all()
@@ -200,7 +200,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=["04. Follow"])
+@extend_schema(tags=["05. Follow"])
 class FollowViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
     queryset = Follow.objects.all()
@@ -232,7 +232,7 @@ class FollowViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@extend_schema(tags=["01. My - User"])
+@extend_schema(tags=["01. My"])
 class MyInfoView(APIView):
     serializer_class = UserInfoSerializer
 
@@ -251,7 +251,7 @@ class MyInfoView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@extend_schema(tags=["01. My - User"])
+@extend_schema(tags=["01. Others"])
 class OtherUserInfoView(APIView):
     serializer_class = UserInfoSerializer
 
@@ -262,7 +262,7 @@ class OtherUserInfoView(APIView):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=["01. My - Profile"])
+@extend_schema(tags=["01. My"])
 class ProfileView(APIView):
     serializer_class = ProfileSerializer
 
@@ -292,7 +292,7 @@ class ProfileView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@extend_schema(tags=["01. My - Profile"])
+@extend_schema(tags=["01. Others"])
 class OtherProfileView(APIView):
     serializer_class = ProfileSerializer
     filter_backends = DjangoFilterBackend
@@ -306,31 +306,29 @@ class OtherProfileView(APIView):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=["01. My - Follow"])
+@extend_schema(tags=["01. My"])
 class FollowView(APIView):
-    serializer_class = FollowSerializer
-
-    def post(self, request, id):
+    def post(self, request, user_id):
         user: User = request.user
 
-        followee = get_object_or_404(User, id=id)
+        followee = get_object_or_404(User, id=user_id)
         follow, created = Follow.objects.get_or_create(user_from=user, user_to=followee)
 
         if created:
             return Response(
-                data={"message": "Followed successfully"},
+                data={"detail": "Followed successfully"},
                 status=status.HTTP_201_CREATED,
             )
 
         follow.delete()
 
         return Response(
-            data={"message": "Unfollowed successfully"},
+            data={"detail": "Unfollowed successfully"},
             status=status.HTTP_204_NO_CONTENT,
         )
 
 
-@extend_schema(tags=["01. My - Follow"])
+@extend_schema(tags=["01. My"])
 class FollowingView(APIView):
     serializer_class = UserSerializer
     filter_backends = DjangoFilterBackend
@@ -345,7 +343,7 @@ class FollowingView(APIView):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=["01. My - Follow"])
+@extend_schema(tags=["01. My"])
 class FollowerView(APIView):
     serializer_class = UserSerializer
     filter_backends = DjangoFilterBackend
@@ -360,7 +358,7 @@ class FollowerView(APIView):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=["01. My - Post"])
+@extend_schema(tags=["01. My"])
 class FeedView(APIView):
     serializer_class = PostSerializer
     filter_backends = DjangoFilterBackend
