@@ -20,13 +20,16 @@ class Image:
         aws_secret_access_key=aws_secret_access_key,
     )
 
-    def __init__(self, image: File):
+    def __init__(self, image: File, parent_directory):
         self.file = image.file
         self.name = image.name
         self.id = str(uuid.uuid4())
         self.ext = self.name.split(".")[-1]
+        self.parent_directory = parent_directory
         self.directory = datetime.now().date()
-        self.filename = f"MEDIA/profile/{self.directory}/{self.id}.{self.ext}"
+        self.filename = (
+            f"MEDIA/{self.parent_directory}/{self.directory}/{self.id}.{self.ext}"
+        )
         self.url = None
 
     def s3_upload(self):
@@ -47,10 +50,10 @@ class Image:
             print(f"Image setting to public failed: {e}")
 
 
-def image_s3_upload(validated_data):
+def image_s3_upload(validated_data, parent_directory):
     if "image" in validated_data:
         image_file = validated_data.pop("image")
-        image = Image(image_file)
+        image = Image(image_file, parent_directory)
         image.s3_upload()
         image.set_public_in_s3()
         validated_data["image_url"] = image.url
