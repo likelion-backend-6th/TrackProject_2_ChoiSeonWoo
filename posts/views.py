@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from django.contrib.contenttypes.models import ContentType
 
 from rest_framework.response import Response
 from rest_framework import status, viewsets
@@ -9,14 +10,18 @@ from drf_spectacular.utils import extend_schema
 
 from django_filters.rest_framework import DjangoFilterBackend
 
-from posts.models import Comment, Image, Post
-from posts.serializers import CommentSerializer, ImageSerializer, PostSerializer
+from posts.models import Comment, Image, Like, Post
+from posts.serializers import (
+    CommentSerializer,
+    ImageSerializer,
+    PostSerializer,
+)
 from posts.filters import PostFilter, CommentFilter
 from posts.permissions import CommonUserPermission
 from users.models import User
 
 
-@extend_schema(tags=["05. Post"])
+@extend_schema(tags=["06. Post"])
 class PostViewSet(viewsets.ModelViewSet):
     permission_classes = [CommonUserPermission]
     queryset = Post.objects.all()
@@ -29,7 +34,7 @@ class PostViewSet(viewsets.ModelViewSet):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=["01. My - Post"])
+@extend_schema(tags=["01. Others"])
 class OtherPostListView(APIView):
     serializer_class = PostSerializer
     filter_backends = DjangoFilterBackend
@@ -44,7 +49,7 @@ class OtherPostListView(APIView):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=["01. My - Post"])
+@extend_schema(tags=["01. My"])
 class MyPostListView(APIView):
     serializer_class = PostSerializer
     filter_backends = DjangoFilterBackend
@@ -59,7 +64,7 @@ class MyPostListView(APIView):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=["06. Comment"])
+@extend_schema(tags=["07. Comment"])
 class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = [CommonUserPermission]
     queryset = Comment.objects.all()
@@ -91,7 +96,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-@extend_schema(tags=["01. My - Comment"])
+@extend_schema(tags=["01. My"])
 class MyCommentListView(APIView):
     serializer_class = CommentSerializer
     filter_backends = DjangoFilterBackend
@@ -106,7 +111,7 @@ class MyCommentListView(APIView):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=["07. Image"])
+@extend_schema(tags=["08. Image"])
 class ImageViewSet(viewsets.ModelViewSet):
     permission_classes = [CommonUserPermission]
     queryset = Image.objects.all()
@@ -147,7 +152,7 @@ class ImageViewSet(viewsets.ModelViewSet):
         )
 
 
-@extend_schema(tags=["01. My - Image"])
+@extend_schema(tags=["01. Others"])
 class OtherImageListView(APIView):
     serializer_class = ImageSerializer
 
@@ -159,7 +164,7 @@ class OtherImageListView(APIView):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=["01. My - Image"])
+@extend_schema(tags=["01. My"])
 class MyImageListView(APIView):
     serializer_class = ImageSerializer
 
@@ -168,4 +173,85 @@ class MyImageListView(APIView):
         images = user.images.all()
 
         serializer = self.serializer_class(images, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["01. My"])
+class LikePostView(APIView):
+    def post(self, request, post_id):
+        user = request.user
+
+        target = get_object_or_404(Post, pk=post_id)
+
+        like, created = Like.objects.get_or_create(
+            content_type=ContentType.objects.get_for_model(target),
+            object_id=post_id,
+            user=user,
+        )
+
+        if not created:
+            like.delete()
+            return Response(
+                data={"detail": "Like Post removed"}, status=status.HTTP_204_NO_CONTENT
+            )
+
+        return Response(
+            data={"detail": "Like Post added"}, status=status.HTTP_201_CREATED
+        )
+
+
+@extend_schema(tags=["01. My"])
+class LikeCommentView(APIView):
+    def post(self, request, comment_id):
+        user = request.user
+
+        target = get_object_or_404(Comment, pk=comment_id)
+
+        like, created = Like.objects.get_or_create(
+            content_type=ContentType.objects.get_for_model(target),
+            object_id=comment_id,
+            user=user,
+        )
+
+        if not created:
+            like.delete()
+            return Response(
+                data={"detail": "Like Comment removed"},
+                status=status.HTTP_204_NO_CONTENT,
+            )
+
+        return Response(
+            data={"detail": "Like Comment added"}, status=status.HTTP_201_CREATED
+        )
+
+
+@extend_schema(tags=["01. My"])
+class MyLikePostListView(APIView):
+    serializer_class = PostSerializer
+
+    def get(self, request):
+        content_type = ContentType.objects.get_for_model(Post)
+        liked_posts_id = Like.objects.filter(
+            user=request.user, content_type=content_type
+        ).values_list("object_id", flat=True)
+        liked_posts = Post.objects.filter(id__in=liked_posts_id)
+
+        serializer = self.serializer_class(liked_posts, many=True)
+
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["01. My"])
+class MyLikeCommentListView(APIView):
+    serializer_class = CommentSerializer
+
+    def get(self, request):
+        content_type = ContentType.objects.get_for_model(Comment)
+        liked_comments_id = Like.objects.filter(
+            user=request.user, content_type=content_type
+        ).values_list("object_id", flat=True)
+        liked_comments = Comment.objects.filter(id__in=liked_comments_id)
+
+        serializer = self.serializer_class(liked_comments, many=True)
+
         return Response(data=serializer.data, status=status.HTTP_200_OK)
