@@ -28,12 +28,12 @@ from drf_spectacular.views import (
 from users.views import (
     MyInfoView,
     OtherUserInfoView,
-    ProfileView,
+    MyProfileView,
     OtherProfileView,
-    FollowView,
-    FollowingView,
-    FollowerView,
-    FeedView,
+    MyFollowView,
+    MyFollowingView,
+    MyFollowerView,
+    MyFeedView,
 )
 
 from posts.views import (
@@ -54,11 +54,11 @@ urlpatterns = []
 
 my_views_urlpatterns = [
     path("my/info/", MyInfoView.as_view(), name="my_info"),
-    path("my/profile/", ProfileView.as_view(), name="my_profile"),
-    path("my/follow/<int:user_id>/", FollowView.as_view(), name="my_follow"),
-    path("my/following/", FollowingView.as_view(), name="my_following"),
-    path("my/follower/", FollowerView.as_view(), name="my_follower"),
-    path("my/feed/", FeedView.as_view(), name="my_feed"),
+    path("my/profile/", MyProfileView.as_view(), name="my_profile"),
+    path("my/follow/<int:user_id>/", MyFollowView.as_view(), name="my_follow"),
+    path("my/following/", MyFollowingView.as_view(), name="my_following"),
+    path("my/follower/", MyFollowerView.as_view(), name="my_follower"),
+    path("my/feed/", MyFeedView.as_view(), name="my_feed"),
     path("my/posts/", MyPostListView.as_view(), name="my_posts_list"),
     path("my/comments/", MyCommentListView.as_view(), name="my_comments_list"),
     path("my/images/", MyImageListView.as_view(), name="my_images_list"),
