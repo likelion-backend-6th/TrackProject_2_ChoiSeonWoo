@@ -40,7 +40,8 @@ class Post(CommonModel):
     publish = models.DateTimeField(default=timezone.now)
 
     tags = TaggableManager()
-    like = GenericRelation("Like")
+    likes = GenericRelation("posts.Like", related_query_name="posts")
+    like_count = models.PositiveIntegerField(default=0)
 
     objects = models.Manager()
     published = PublishedManager()
@@ -51,6 +52,7 @@ class Post(CommonModel):
         ordering = ["-publish"]
         indexes = [
             models.Index(fields=["-publish"]),
+            models.Index(fields=["-like_count"]),
         ]
 
     def __str__(self):
@@ -81,7 +83,8 @@ class Comment(CommonModel):
         related_name="comments",
     )
     body = models.TextField(verbose_name="본문")
-    like = GenericRelation("Like")
+    likes = GenericRelation("posts.Like", related_query_name="comments")
+    like_count = models.PositiveIntegerField(default=0)
 
     class Meta:
         verbose_name = "댓글"
@@ -89,6 +92,7 @@ class Comment(CommonModel):
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["-created_at"]),
+            models.Index(fields=["-like_count"]),
         ]
 
     def __str__(self):
@@ -123,10 +127,6 @@ class Image(models.Model):
 
 
 class Like(models.Model):
-    class ContentTypeChoices(models.IntegerChoices):
-        post = 9
-        comment = 12
-
     content_type = models.ForeignKey(
         ContentType,
         on_delete=models.CASCADE,
