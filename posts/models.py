@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
 
 from taggit.managers import TaggableManager
 
@@ -38,6 +40,7 @@ class Post(CommonModel):
     publish = models.DateTimeField(default=timezone.now)
 
     tags = TaggableManager()
+    like = GenericRelation("Like")
 
     objects = models.Manager()
     published = PublishedManager()
@@ -78,6 +81,7 @@ class Comment(CommonModel):
         related_name="comments",
     )
     body = models.TextField(verbose_name="본문")
+    like = GenericRelation("Like")
 
     class Meta:
         verbose_name = "댓글"
@@ -116,3 +120,38 @@ class Image(models.Model):
 
     def __str__(self):
         return f"{self.post} - {self.name}"
+
+
+class Like(models.Model):
+    class ContentTypeChoices(models.IntegerChoices):
+        post = 9
+        comment = 12
+
+    content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.CASCADE,
+        verbose_name="content type",
+        related_name="%(app_label)s_%(class)s_likes",
+    )
+    object_id = models.IntegerField(verbose_name="object ID", db_index=True)
+    content_object = GenericForeignKey("content_type", "object_id")
+    user = models.ForeignKey(
+        "users.User",
+        verbose_name="좋아요 누른 사람",
+        on_delete=models.CASCADE,
+        related_name="likes",
+    )
+    created_at = models.DateTimeField(verbose_name="생성일", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "좋아요"
+        verbose_name_plural = "좋아요 목록"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["content_type", "object_id"]),
+            models.Index(fields=["created_at"]),
+        ]
+        unique_together = [["content_type", "object_id", "user"]]
+
+    def __str__(self):
+        return f"{self.user} like {self.content_type.model}//-{self.object_id}"
