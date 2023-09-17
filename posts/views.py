@@ -140,14 +140,14 @@ class ImageViewSet(viewsets.ModelViewSet):
     @extend_schema(deprecated=True)
     def update(self, request: Request, *args, **kwargs):
         return Response(
-            data={"message": "Update operation is not supported"},
+            data={"detail": "Update operation is not supported"},
             status=status.HTTP_404_NOT_FOUND,
         )
 
     @extend_schema(deprecated=True)
     def partial_update(self, request: Request, *args, **kwargs):
         return Response(
-            data={"message": "Partial Update operation is not supported"},
+            data={"detail": "Partial Update operation is not supported"},
             status=status.HTTP_404_NOT_FOUND,
         )
 
