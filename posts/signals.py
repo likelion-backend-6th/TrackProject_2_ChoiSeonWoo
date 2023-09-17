@@ -9,11 +9,15 @@ def update_like_count(sender, instance, **kwargs):
     object_id = instance.object_id
 
     if content_type.model == "post":
-        post = Post.objects.get(id=object_id)
-        post.like_count = post.likes.count()
-        post.save()
+        try:
+            post = Post.objects.get(id=object_id)
+            post.like_count = post.likes.count()
+            post.save()
+        except Post.DoesNotExist:
+            pass
 
     elif content_type.model == "comment":
-        comment = Comment.objects.get(id=object_id)
-        comment.like_count = comment.likes.count()
-        comment.save()
+        comment = Comment.objects.filter(id=object_id).first()
+        if comment:
+            comment.like_count = comment.likes.count()
+            comment.save()
