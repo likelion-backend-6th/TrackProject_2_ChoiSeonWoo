@@ -51,7 +51,7 @@ class Post(CommonModel):
         ]
 
     def __str__(self):
-        return self.title
+        return f"{self.title[:10]}.." if len(self.title) > 10 else self.title
 
     def unique_slug_generator(self, new_slug=None):
         slug = slugify(self.title, allow_unicode=True)
@@ -69,7 +69,7 @@ class Post(CommonModel):
 
 class Comment(CommonModel):
     post = models.ForeignKey(
-        Post, verbose_name="댓글", on_delete=models.CASCADE, related_name="comments"
+        Post, verbose_name="게시글", on_delete=models.CASCADE, related_name="comments"
     )
     author = models.ForeignKey(
         "users.User",
@@ -80,8 +80,8 @@ class Comment(CommonModel):
     body = models.TextField(verbose_name="본문")
 
     class Meta:
-        verbose_name = "게시글"
-        verbose_name_plural = "게시글 목록"
+        verbose_name = "댓글"
+        verbose_name_plural = "댓글 목록"
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["-created_at"]),
@@ -89,3 +89,30 @@ class Comment(CommonModel):
 
     def __str__(self):
         return f"{self.body[:10]}.." if len(self.body) > 10 else self.body
+
+
+class Image(models.Model):
+    name = models.TextField(verbose_name="제목", max_length=50)
+    post = models.ForeignKey(
+        Post, verbose_name="게시글", on_delete=models.CASCADE, related_name="images"
+    )
+    author = models.ForeignKey(
+        "users.User",
+        verbose_name="작성자",
+        on_delete=models.CASCADE,
+        related_name="images",
+    )
+    image_url = models.URLField(verbose_name="이미지", null=True, blank=True)
+    is_active = models.BooleanField(verbose_name="활성 여부", default=True)
+    created_at = models.DateTimeField(verbose_name="생성일", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "이미지"
+        verbose_name_plural = "이미지 목록"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.post} - {self.name}"
