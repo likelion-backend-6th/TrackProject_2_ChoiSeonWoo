@@ -410,6 +410,15 @@
 - [x]  생성한 View의 URL 등록
 - [x]  테스트코드 작성 및 확인
 
+### 1️⃣5️⃣ Like
+
+- [x]  모델 생성 및 마이그레이션 적용
+- [x]  시리얼라이저 및 뷰 생성
+- [x]  생성한 View의 URL 등록
+- [x]  테스트코드 작성 및 확인
+- [x]  API 정리를 위한 추가 리팩토링
+- [x]  좋아요 카운트를 위한 테이블 비정규화 및 시그널 추가
+
 
 <br>
 
@@ -440,6 +449,7 @@
 - [19. (📺 PLAN) DB 및 API 추가 설계](https://notion.so/198d2b2898354246aa12c73ddc88fd22)
 - [20. (👑 FEATURE) Comment](https://notion.so/c7e4103eb94343968a56c2d1786beb6e)
 - [21. (👑 FEATURE) Image (2)](https://notion.so/efbef538b8b44bb9acbe287c9a863a08)
+- [22. (👑 FEATURE) Like](https://notion.so/c20221b942ba4f3f9ed152598cedc846)
 
 <br>
 

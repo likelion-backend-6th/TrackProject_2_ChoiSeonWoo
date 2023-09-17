@@ -257,15 +257,6 @@ class UserViewSetTest(APITestCase):
         with self.assertRaises(self.test_model.DoesNotExist):
             self.test_model.objects.get(id=self.user01.pk)
 
-    def test_get_profile(self):
-        test_url = reverse("user-profile", args=[self.user01.pk])
-        client = APIClient()
-        client.force_authenticate(user=self.admin_user)
-        res: Response = client.get(test_url)
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data.get("id"), self.user01.profile.id)
-
     def test_post_follow(self):
         test_url = reverse("user-follow", args=[self.admin_user.pk, self.user03.pk])
         client = APIClient()
@@ -325,7 +316,7 @@ class UserViewSetTest(APITestCase):
         self.assertEqual(len(res.data), 3)
 
 
-class ProfileViewSetTest(APITestCase):
+class ProfileViewTest(APITestCase):
     # Set up
     @classmethod
     def setUpTestData(cls):
@@ -357,7 +348,6 @@ class ProfileViewSetTest(APITestCase):
             password="password",
         )
         cls.user02_profile_data = {
-            "user": cls.user02.id,
             "nickname": "TestUser02",
             "birthday": datetime.now().date(),
         }
@@ -366,60 +356,18 @@ class ProfileViewSetTest(APITestCase):
             "birthday": datetime.now().date(),
         }
 
-    def test_list_data(self):
-        test_url = reverse("profile-list")
+    def test_get_data(self):
+        test_url = reverse("user-profile", args=[self.admin_user.pk])
         client = APIClient()
         client.force_authenticate(user=self.admin_user)
         res: Response = client.get(test_url)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(res.data), self.test_model.objects.count())
-
-    def test_list_with_filter(self):
-        test_url = reverse("profile-list")
-        query_params = {"nickname": "Admin"}
-        client = APIClient()
-        client.force_authenticate(user=self.admin_user)
-        res: Response = client.get(test_url, data=query_params)
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            len(res.data),
-            self.test_model.objects.filter(nickname__icontains="Admin").count(),
-        )
-
-    def test_create_data(self):
-        test_url = reverse("profile-list")
-        client = APIClient()
-        client.force_authenticate(user=self.admin_user)
-        res: Response = client.post(test_url, self.user02_profile_data)
-
-        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(self.test_model.objects.count(), 3)
-
-    def test_retrieve_data(self):
-        test_url = reverse("profile-detail", args=[self.profile00.pk])
-        client = APIClient()
-        client.force_authenticate(user=self.admin_user)
-        res: Response = client.get(test_url)
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data.get("id"), self.profile00.pk)
-
-    def test_update_data(self):
-        test_url = reverse("profile-detail", args=[self.profile01.pk])
-        client = APIClient()
-        client.force_authenticate(user=self.admin_user)
-        res: Response = client.patch(test_url, self.profile01_modifying_data)
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            res.data.get("nickname"), self.profile01_modifying_data["nickname"]
-        )
+        self.assertEqual(res.data.get("nickname"), self.profile00.nickname)
 
     @patch("common.utils.Image.s3_client")
-    def test_patch_image(self, s3_client: MagicMock):
-        test_url = reverse("profile-detail", args=[self.profile01.pk])
+    def test_post_data(self, s3_client: MagicMock):
+        test_url = reverse("user-profile", args=[self.user02.pk])
 
         s3_client.upload_fileobj.return_value = None
         s3_client.put_object_acl.return_value = None
@@ -429,8 +377,39 @@ class ProfileViewSetTest(APITestCase):
 
         sample_image = create_sample_image()
 
-        data = {"user": self.user01.id, "image": sample_image}
-        res = client.patch(test_url, data=data)
+        data = self.user02_profile_data
+        data["user_id"] = self.user02.id
+        data["image"] = sample_image
+        res: Response = client.post(test_url, data)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            res.data.get("nickname"), self.user02_profile_data.get("nickname")
+        )
+
+        s3_client.upload_fileobj.assert_called_once()
+        s3_client.put_object_acl.assert_called_once()
+
+    @patch("common.utils.Image.s3_client")
+    def test_put_image(self, s3_client: MagicMock):
+        test_url = reverse("user-profile", args=[self.user01.pk])
+
+        s3_client.upload_fileobj.return_value = None
+        s3_client.put_object_acl.return_value = None
+
+        client = APIClient()
+        client.force_authenticate(user=self.admin_user)
+
+        sample_image = create_sample_image()
+
+        data = {
+            "user": self.user01.id,
+            "nickname": "user01profile",
+            "birthday": datetime.now().date(),
+            "image": sample_image,
+        }
+        res = client.put(test_url, data=data)
+
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertTrue(
             res.data.get("image_url").startswith("https://kr.object.ncloudstorage.com")
@@ -440,7 +419,7 @@ class ProfileViewSetTest(APITestCase):
         s3_client.put_object_acl.assert_called_once()
 
     def test_delete_data(self):
-        test_url = reverse("profile-detail", args=[self.profile01.pk])
+        test_url = reverse("user-profile", args=[self.user01.pk])
         client = APIClient()
         client.force_authenticate(user=self.admin_user)
         res: Response = client.delete(test_url)
@@ -448,10 +427,10 @@ class ProfileViewSetTest(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(self.test_model.objects.count(), 1)
         with self.assertRaises(self.test_model.DoesNotExist):
-            self.test_model.objects.get(id=self.profile01.pk)
+            self.test_model.objects.get(user_id=self.user01.pk)
 
 
-class FollowViewSetTest(APITestCase):
+class FollowListViewTest(APITestCase):
     # Set up
     @classmethod
     def setUpTestData(cls):
@@ -497,15 +476,9 @@ class FollowViewSetTest(APITestCase):
         cls.follow05 = cls.test_model.objects.create(
             user_from=cls.user02, user_to=cls.user03
         )
-        cls.follow_data01 = {"user_from": cls.user01.id, "user_to": cls.user03.id}
-        cls.unfollow_data01 = {"user_from": cls.user01.id, "user_to": cls.user02.id}
-        cls.follow05_modifying_data = {
-            "user_from": cls.user02.id,
-            "user_to": cls.user01.id,
-        }
 
     def test_list_data(self):
-        test_url = reverse("follow-list")
+        test_url = reverse("user-follow-list")
         client = APIClient()
         client.force_authenticate(user=self.admin_user)
         res: Response = client.get(test_url)
@@ -514,7 +487,7 @@ class FollowViewSetTest(APITestCase):
         self.assertEqual(len(res.data), self.test_model.objects.count())
 
     def test_list_with_filter(self):
-        test_url = reverse("follow-list")
+        test_url = reverse("user-follow-list")
         query_params = {"user_from": self.admin_user.id}
         client = APIClient()
         client.force_authenticate(user=self.admin_user)
@@ -525,55 +498,6 @@ class FollowViewSetTest(APITestCase):
             len(res.data),
             self.test_model.objects.filter(user_from=self.admin_user).count(),
         )
-
-    def test_create_follow_data(self):
-        test_url = reverse("follow-list")
-        client = APIClient()
-        client.force_authenticate(user=self.admin_user)
-        res: Response = client.post(test_url, self.follow_data01)
-
-        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(self.test_model.objects.count(), 6)
-
-    def test_create_unfollow_data(self):
-        test_url = reverse("follow-list")
-        client = APIClient()
-        client.force_authenticate(user=self.admin_user)
-        res: Response = client.post(test_url, self.unfollow_data01)
-
-        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(self.test_model.objects.count(), 4)
-
-    def test_retrieve_data(self):
-        test_url = reverse("follow-detail", args=[self.follow01.pk])
-        client = APIClient()
-        client.force_authenticate(user=self.admin_user)
-        res: Response = client.get(test_url)
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data.get("id"), self.follow01.pk)
-
-    def test_update_data(self):
-        test_url = reverse("follow-detail", args=[self.follow05.pk])
-        client = APIClient()
-        client.force_authenticate(user=self.admin_user)
-        res: Response = client.put(test_url, self.follow05_modifying_data)
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            res.data.get("user_to"), self.follow05_modifying_data["user_to"]
-        )
-
-    def test_delete_data(self):
-        test_url = reverse("follow-detail", args=[self.follow01.pk])
-        client = APIClient()
-        client.force_authenticate(user=self.admin_user)
-        res: Response = client.delete(test_url)
-
-        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(self.test_model.objects.count(), 4)
-        with self.assertRaises(self.test_model.DoesNotExist):
-            self.test_model.objects.get(id=self.follow01.pk)
 
 
 class OtherUserRelatedViewTest(APITestCase):
