@@ -326,6 +326,24 @@ class PostTest(APITestCase):
         with self.assertRaises(self.test_model.DoesNotExist):
             self.test_model.objects.get(id=self.post01.pk)
 
+    def test_other_post_list(self):
+        test_url = reverse("other_posts_list")
+        client = APIClient()
+        client.force_authenticate(user=self.user01)
+        res: Response = client.get(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 5)
+
+    def test_my_post_list(self):
+        test_url = reverse("my_posts_list")
+        client = APIClient()
+        client.force_authenticate(user=self.user01)
+        res: Response = client.get(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 4)
+
     def test_comment_list_data(self):
         test_url = reverse("post-comments-list", args=[self.post01.pk])
         client = APIClient()
@@ -396,6 +414,15 @@ class PostTest(APITestCase):
         with self.assertRaises(Comment.DoesNotExist):
             Comment.objects.get(id=self.comment01.pk)
 
+    def test_my_comment_list(self):
+        test_url = reverse("my_comments_list")
+        client = APIClient()
+        client.force_authenticate(user=self.user01)
+        res: Response = client.get(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 3)
+
     def test_image_list_data(self):
         test_url = reverse("post-images-list", args=[self.post01.pk])
         client = APIClient()
@@ -452,32 +479,14 @@ class PostTest(APITestCase):
         with self.assertRaises(Image.DoesNotExist):
             Image.objects.get(id=self.image01.pk)
 
-    def test_other_post_list(self):
-        test_url = reverse("other_posts_list")
+    def test_my_image_list(self):
+        test_url = reverse("my_images_list")
         client = APIClient()
         client.force_authenticate(user=self.user01)
         res: Response = client.get(test_url)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(res.data), 5)
-
-    def test_my_post_list(self):
-        test_url = reverse("my_posts_list")
-        client = APIClient()
-        client.force_authenticate(user=self.user01)
-        res: Response = client.get(test_url)
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(res.data), 4)
-
-    def test_my_comment_list(self):
-        test_url = reverse("my_comments_list")
-        client = APIClient()
-        client.force_authenticate(user=self.user01)
-        res: Response = client.get(test_url)
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(res.data), 3)
+        self.assertEqual(len(res.data), 2)
 
     def test_other_image_list(self):
         test_url = reverse("other_images_list")
@@ -487,15 +496,6 @@ class PostTest(APITestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 3)
-
-    def test_my_image_list(self):
-        test_url = reverse("my_images_list")
-        client = APIClient()
-        client.force_authenticate(user=self.user01)
-        res: Response = client.get(test_url)
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(res.data), 2)
 
     def test_post_like_data(self):
         test_url = reverse("my_like_post", args=[self.post02.pk])
