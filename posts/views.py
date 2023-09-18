@@ -28,6 +28,12 @@ class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
     filterset_class = PostFilter
 
+    def get_queryset(self):
+        user: User = self.request.user
+        queryset = self.queryset if user.is_admin else Post.published
+
+        return queryset
+
     def list(self, request: Request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(queryset, many=True)
@@ -42,7 +48,7 @@ class OtherPostListView(APIView):
 
     def get(self, request):
         user: User = request.user
-        posts = Post.objects.exclude(author=user)
+        posts = Post.published.exclude(author=user)
         queryset = self.filter_backends().filter_queryset(request, posts, self)
 
         serializer = self.serializer_class(queryset, many=True)
@@ -57,7 +63,7 @@ class MyPostListView(APIView):
 
     def get(self, request):
         user: User = request.user
-        posts = user.posts.all()
+        posts = user.posts.filter(is_active=True)
         queryset = self.filter_backends().filter_queryset(request, posts, self)
 
         serializer = self.serializer_class(queryset, many=True)
@@ -72,8 +78,12 @@ class CommentViewSet(viewsets.ModelViewSet):
     filterset_class = CommentFilter
 
     def get_queryset(self):
+        user: User = self.request.user
+        queryset = (
+            self.queryset if user.is_admin else self.queryset.filter(is_active=True)
+        )
         post_pk = self.kwargs["post_pk"]
-        queryset = Comment.objects.filter(post__pk=post_pk)
+        queryset = self.queryset.filter(post__pk=post_pk)
         comment_pk = self.kwargs.get("id")
         if comment_pk:
             queryset = queryset.filter(id=comment_pk)
@@ -104,7 +114,7 @@ class MyCommentListView(APIView):
 
     def get(self, request):
         user: User = request.user
-        posts = user.comments.all()
+        posts = user.comments.filter(is_active=True)
         queryset = self.filter_backends().filter_queryset(request, posts, self)
 
         serializer = self.serializer_class(queryset, many=True)
@@ -118,6 +128,10 @@ class ImageViewSet(viewsets.ModelViewSet):
     serializer_class = ImageSerializer
 
     def get_queryset(self):
+        user: User = self.request.user
+        queryset = (
+            self.queryset if user.is_admin else self.queryset.filter(is_active=True)
+        )
         post_pk = self.kwargs["post_pk"]
         queryset = Image.objects.filter(post__pk=post_pk)
         image_pk = self.kwargs.get("id")
@@ -158,7 +172,7 @@ class OtherImageListView(APIView):
 
     def get(self, request):
         user: User = request.user
-        images = Image.objects.exclude(author=user)
+        images = Image.objects.filter(is_active=True).exclude(author=user)
 
         serializer = self.serializer_class(images, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
@@ -170,7 +184,7 @@ class MyImageListView(APIView):
 
     def get(self, request):
         user: User = request.user
-        images = user.images.all()
+        images = user.images.filter(is_active=True)
 
         serializer = self.serializer_class(images, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
@@ -181,7 +195,7 @@ class LikePostView(APIView):
     def post(self, request, post_id):
         user = request.user
 
-        target = get_object_or_404(Post, pk=post_id)
+        target = get_object_or_404(Post, pk=post_id, is_active=True)
 
         like, created = Like.objects.get_or_create(
             content_type=ContentType.objects.get_for_model(target),
@@ -205,7 +219,7 @@ class LikeCommentView(APIView):
     def post(self, request, comment_id):
         user = request.user
 
-        target = get_object_or_404(Comment, pk=comment_id)
+        target = get_object_or_404(Comment, pk=comment_id, is_active=True)
 
         like, created = Like.objects.get_or_create(
             content_type=ContentType.objects.get_for_model(target),
@@ -234,7 +248,7 @@ class MyLikePostListView(APIView):
         liked_posts_id = Like.objects.filter(
             user=request.user, content_type=content_type
         ).values_list("object_id", flat=True)
-        liked_posts = Post.objects.filter(id__in=liked_posts_id)
+        liked_posts = Post.objects.filter(id__in=liked_posts_id, is_active=True)
 
         serializer = self.serializer_class(liked_posts, many=True)
 
@@ -250,7 +264,9 @@ class MyLikeCommentListView(APIView):
         liked_comments_id = Like.objects.filter(
             user=request.user, content_type=content_type
         ).values_list("object_id", flat=True)
-        liked_comments = Comment.objects.filter(id__in=liked_comments_id)
+        liked_comments = Comment.objects.filter(
+            id__in=liked_comments_id, is_active=True
+        )
 
         serializer = self.serializer_class(liked_comments, many=True)
 
