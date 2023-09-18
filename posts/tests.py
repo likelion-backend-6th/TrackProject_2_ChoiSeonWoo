@@ -28,7 +28,7 @@ class PostModelTestCase(APITestCase):
             title="test post title",
             body="test post body",
             author=cls.user,
-            status=Post.StatusChoices.DRAFT,
+            status=Post.StatusChoices.PUBLISHED,
             publish=timezone.now(),
         )
         cls.post.tags.add("tag1", "tag2", "tag3")
@@ -73,46 +73,55 @@ class PostTest(APITestCase):
             title="어제01",
             author=cls.admin_user,
             body="어제작성한글",
+            status=Post.StatusChoices.PUBLISHED,
         )
         cls.post02 = cls.test_model.objects.create(
             title="오늘01",
             author=cls.admin_user,
             body="오늘작성한글",
+            status=Post.StatusChoices.PUBLISHED,
         )
         cls.post03 = cls.test_model.objects.create(
             title="내일01",
             author=cls.admin_user,
             body="내일작성한글",
+            status=Post.StatusChoices.PUBLISHED,
         )
         cls.post04 = cls.test_model.objects.create(
             title="어제11",
             author=cls.user01,
             body="어제작성한글",
+            status=Post.StatusChoices.PUBLISHED,
         )
         cls.post05 = cls.test_model.objects.create(
             title="오늘11",
             author=cls.user01,
             body="오늘작성한글",
+            status=Post.StatusChoices.PUBLISHED,
         )
         cls.post06 = cls.test_model.objects.create(
             title="내일11",
             author=cls.user01,
             body="내일작성한글",
+            status=Post.StatusChoices.PUBLISHED,
         )
         cls.post07 = cls.test_model.objects.create(
             title="어제21",
             author=cls.user01,
             body="어제작성한글",
+            status=Post.StatusChoices.PUBLISHED,
         )
         cls.post08 = cls.test_model.objects.create(
             title="오늘21",
             author=cls.user02,
             body="오늘작성한글",
+            status=Post.StatusChoices.PUBLISHED,
         )
         cls.post09 = cls.test_model.objects.create(
             title="내일21",
             author=cls.user02,
             body="내일작성한글",
+            status=Post.StatusChoices.PUBLISHED,
         )
 
         cls.post01.tags.add("어제", "날씨", "프로젝트", "평일")
@@ -129,22 +138,26 @@ class PostTest(APITestCase):
             "title": "새글",
             "author": cls.user01.id,
             "body": "새글 작성 완료",
+            "status": Post.StatusChoices.PUBLISHED,
         }
 
         cls.post01_modifying_data = {
             "title": "수정된 글",
             "author": cls.user01.id,
             "body": "새글 수정 완료",
+            "status": Post.StatusChoices.PUBLISHED,
         }
 
         cls.user01_post_data = {
             "title": "새글",
             "body": "새글 작성 완료",
+            "status": Post.StatusChoices.PUBLISHED,
         }
 
         cls.user_02_post09_modifying_data = {
             "title": "수정된 글",
             "body": "새글 수정 완료",
+            "status": Post.StatusChoices.PUBLISHED,
         }
 
         cls.comment01 = Comment.objects.create(
