@@ -70,6 +70,22 @@ class MyPostListView(APIView):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
+@extend_schema(tags=["01. My"])
+class MyFeedView(APIView):
+    serializer_class = PostSerializer
+    filter_backends = DjangoFilterBackend
+    filterset_class = PostFilter
+
+    def get(self, request):
+        user: User = request.user
+        following = user.following.filter(is_active=True)
+        posts = Post.objects.filter(author__in=following, is_active=True)
+        queryset = self.filter_backends().filter_queryset(request, posts, self)
+
+        serializer = self.serializer_class(queryset, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
 @extend_schema(tags=["07. Comment"])
 class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = [CommonUserPermission]
