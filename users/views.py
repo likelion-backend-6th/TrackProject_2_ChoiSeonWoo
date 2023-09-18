@@ -22,7 +22,7 @@ from common.permissions import IsAdminOrReadOnly
 from posts.filters import PostFilter
 
 from posts.models import Post
-from posts.serializers import PostSerializer
+from posts.serializers import CommentSerializer, PostSerializer
 
 from users.models import Follow, Profile, User
 from users.serializers import (
@@ -219,17 +219,17 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = PostSerializer(posts, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
-    @extend_schema(tags=["07. Comment"], **openapi.user_posts)
-    @action(detail=True, methods=["get"], url_name="posts")
+    @extend_schema(tags=["07. Comment"], **openapi.user_comments)
+    @action(detail=True, methods=["get"], url_name="comments")
     def comments(self, request: Request, *args, **kwargs):
         user: User = self.get_object()
-        posts = (
+        comments = (
             user.comments.all()
             if request.user.is_admin
             else user.comments.filter(is_active=True)
         )
 
-        serializer = PostSerializer(posts, many=True)
+        serializer = CommentSerializer(comments, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
