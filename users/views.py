@@ -16,7 +16,7 @@ from rest_framework_simplejwt.views import (
 )
 
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from common.permissions import IsAdminOrReadOnly
 from posts.filters import PostFilter
@@ -35,9 +35,10 @@ from users.serializers import (
     FollowSerializer,
 )
 from users.filters import UserFilter, ProfileFilter, FollowFilter
+from users import openapi
 
 
-@extend_schema(tags=["00. Auth"])
+@extend_schema(tags=["00. Auth"], **openapi.sign_up)
 class SignUpView(APIView):
     serializer_class = SignUpSeiralizer
     permission_classes = [AllowAny]
@@ -63,7 +64,7 @@ class SignUpView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@extend_schema(tags=["00. Auth"])
+@extend_schema(tags=["00. Auth"], **openapi.login)
 class LoginView(APIView):
     serializer_class = LoginSeiralizer
     permission_classes = [AllowAny]
@@ -90,17 +91,25 @@ class LoginView(APIView):
         return Response({"detail": "login failed"}, status=status.HTTP_401_UNAUTHORIZED)
 
 
-@extend_schema(tags=["00. Auth"])
+@extend_schema(tags=["00. Auth"], **openapi.create_token)
 class TokenObtainPairView_(TokenObtainPairView):
     pass
 
 
-@extend_schema(tags=["00. Auth"])
+@extend_schema(tags=["00. Auth"], **openapi.refresh_token)
 class TokenRefreshView_(TokenRefreshView):
     pass
 
 
 @extend_schema(tags=["03. User"])
+@extend_schema_view(
+    list=extend_schema(**openapi.user_list),
+    create=extend_schema(**openapi.user_create),
+    retrieve=extend_schema(**openapi.user_retrieve),
+    update=extend_schema(**openapi.user_update),
+    partial_update=extend_schema(**openapi.user_partial_update),
+    destroy=extend_schema(**openapi.user_destroy),
+)
 class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
     queryset = User.objects.all()
@@ -127,15 +136,15 @@ class UserViewSet(viewsets.ModelViewSet):
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    @extend_schema(tags=["05. Follow"])
+    @extend_schema(tags=["05. Follow"], **openapi.user_follow)
     @action(
         detail=True,
         methods=["post"],
         url_path=r"follow/(?P<id>[0-9]+)",
     )
     def follow(self, request: Request, pk, id):
-        follower: User = get_object_or_404(User, id=pk)
-        followee: User = get_object_or_404(User, id=id)
+        follower: User = get_object_or_404(User, id=pk, is_active=True)
+        followee: User = get_object_or_404(User, id=id, is_active=True)
 
         follow, created = Follow.objects.get_or_create(
             user_from=follower, user_to=followee
@@ -153,39 +162,72 @@ class UserViewSet(viewsets.ModelViewSet):
             status=status.HTTP_204_NO_CONTENT,
         )
 
-    @extend_schema(tags=["05. Follow"])
+    @extend_schema(tags=["05. Follow"], **openapi.user_following)
     @action(detail=True, methods=["get"], url_name="following")
     def following(self, request: Request, *args, **kwargs):
         user: User = self.get_object()
 
-        following = user.following.all()
+        following = (
+            user.following.all()
+            if request.user.is_admin
+            else user.following.filter(is_active=True)
+        )
         serializer = self.get_serializer(following, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
-    @extend_schema(tags=["05. Follow"])
+    @extend_schema(tags=["05. Follow"], **openapi.user_follower)
     @action(detail=True, methods=["get"], url_name="follower")
     def follower(self, request: Request, *args, **kwargs):
         user: User = self.get_object()
 
-        following = user.follower.all()
+        following = (
+            user.follower.all()
+            if request.user.is_admin
+            else user.follower.filter(is_active=True)
+        )
         serializer = self.get_serializer(following, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
-    @extend_schema(tags=["06. Post"])
+    @extend_schema(tags=["06. Post"], **openapi.user_posts)
     @action(detail=True, methods=["get"], url_name="posts")
     def posts(self, request: Request, *args, **kwargs):
         user: User = self.get_object()
-        posts = user.posts.all()
+        posts = (
+            user.posts.all()
+            if request.user.is_admin
+            else user.posts.filter(status=Post.StatusChoices.PUBLISHED, is_active=True)
+        )
 
         serializer = PostSerializer(posts, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
-    @extend_schema(tags=["06. Post"])
+    @extend_schema(tags=["06. Post"], **openapi.user_feed)
     @action(detail=True, methods=["get"], url_path="feed")
     def feed(self, request: Request, *args, **kwargs):
         user: User = self.get_object()
         following = user.following.all()
-        posts = Post.objects.filter(author__in=following)
+        posts = (
+            Post.objects.filter(author__in=following)
+            if request.user.is_admin
+            else Post.objects.filter(
+                author__in=following,
+                status=Post.StatusChoices.PUBLISHED,
+                is_active=True,
+            )
+        )
+
+        serializer = PostSerializer(posts, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(tags=["07. Comment"], **openapi.user_posts)
+    @action(detail=True, methods=["get"], url_name="posts")
+    def comments(self, request: Request, *args, **kwargs):
+        user: User = self.get_object()
+        posts = (
+            user.comments.all()
+            if request.user.is_admin
+            else user.comments.filter(is_active=True)
+        )
 
         serializer = PostSerializer(posts, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
@@ -374,22 +416,6 @@ class MyFollowerView(APIView):
         user: User = request.user
         follower = user.follower.filter(is_active=True)
         queryset = self.filter_backends().filter_queryset(request, follower, self)
-
-        serializer = self.serializer_class(queryset, many=True)
-        return Response(data=serializer.data, status=status.HTTP_200_OK)
-
-
-@extend_schema(tags=["01. My"])
-class MyFeedView(APIView):
-    serializer_class = PostSerializer
-    filter_backends = DjangoFilterBackend
-    filterset_class = PostFilter
-
-    def get(self, request):
-        user: User = request.user
-        following = user.following.filter(is_active=True)
-        posts = Post.objects.filter(author__in=following, is_active=True)
-        queryset = self.filter_backends().filter_queryset(request, posts, self)
 
         serializer = self.serializer_class(queryset, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
