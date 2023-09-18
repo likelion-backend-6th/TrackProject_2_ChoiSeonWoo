@@ -8,6 +8,7 @@ from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from rest_framework.response import Response
 
+from users.models import Follow
 from posts.models import Comment, Image, Like, Post
 from common.test import create_sample_image
 
@@ -68,6 +69,8 @@ class PostTest(APITestCase):
             phone="01222222222",
             password="password",
         )
+
+        cls.follow01 = Follow.objects.create(user_from=cls.user01, user_to=cls.user02)
 
         cls.post01 = cls.test_model.objects.create(
             title="어제01",
@@ -356,6 +359,15 @@ class PostTest(APITestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 4)
+
+    def test_my_feed_view(self):
+        test_url = reverse("my_feed")
+        client = APIClient()
+        client.force_authenticate(user=self.user01)
+        res: Response = client.get(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 2)
 
     def test_comment_list_data(self):
         test_url = reverse("post-comments-list", args=[self.post01.pk])
