@@ -33,12 +33,12 @@ from users.views import (
     MyFollowView,
     MyFollowingView,
     MyFollowerView,
-    MyFeedView,
 )
 
 from posts.views import (
     OtherPostListView,
     MyPostListView,
+    MyFeedView,
     MyCommentListView,
     OtherImageListView,
     MyImageListView,
