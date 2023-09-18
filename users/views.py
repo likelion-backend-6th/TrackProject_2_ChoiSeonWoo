@@ -107,6 +107,14 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     filterset_class = UserFilter
 
+    def get_queryset(self):
+        user: User = self.request.user
+        queryset = (
+            self.queryset if user.is_admin else self.queryset.filter(is_active=True)
+        )
+
+        return queryset
+
     def list(self, request: Request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(queryset, many=True)
@@ -186,18 +194,21 @@ class UserViewSet(viewsets.ModelViewSet):
 @extend_schema(tags=["04. Profile"])
 class ProfileView(APIView):
     permission_classes = [IsAdminOrReadOnly]
-    queryset = Profile.objects.all()
     serializer_class = UserProfileSerializer
 
     def get(self, request, user_pk):
-        user: User = User.objects.get(id=user_pk)
-        profile: Profile = get_object_or_404(Profile, user=user)
+        user: User = get_object_or_404(User, id=user_pk, is_active=True)
+        profile: Profile = (
+            get_object_or_404(Profile, user=user)
+            if user.is_admin
+            else get_object_or_404(Profile, user=user, is_active=True)
+        )
 
         serializer = self.serializer_class(profile)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, user_pk):
-        user: User = User.objects.get(id=user_pk)
+        user: User = get_object_or_404(User, id=user_pk, is_active=True)
         serializer = self.serializer_class(data=request.data, context={"user": user})
 
         serializer.is_valid(raise_exception=True)
@@ -205,8 +216,8 @@ class ProfileView(APIView):
         return Response(data=serializer.data, status=status.HTTP_201_CREATED)
 
     def put(self, request, user_pk):
-        user: User = get_object_or_404(User, pk=user_pk)
-        instance: Profile = user.profile
+        user: User = get_object_or_404(User, id=user_pk, is_active=True)
+        instance: Profile = get_object_or_404(Profile, user=user, is_active=True)
         serializer = self.serializer_class(instance, data=request.data)
 
         serializer.is_valid(raise_exception=True)
@@ -214,8 +225,8 @@ class ProfileView(APIView):
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, user_pk):
-        user: User = User.objects.get(id=user_pk)
-        profile: Profile = user.profile
+        user: User = get_object_or_404(User, id=user_pk, is_active=True)
+        profile: Profile = get_object_or_404(Profile, user=user, is_active=True)
 
         profile.delete()
 
@@ -260,7 +271,11 @@ class OtherUserInfoView(APIView):
     serializer_class = UserInfoSerializer
 
     def get(self, request):
-        users: User = User.objects.select_related("profile").exclude(id=request.user.id)
+        users: User = (
+            User.objects.select_related("profile")
+            .filter(is_active=True)
+            .exclude(id=request.user.id)
+        )
 
         serializer = self.serializer_class(users, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
@@ -303,7 +318,9 @@ class OtherProfileView(APIView):
     filterset_class = ProfileFilter
 
     def get(self, request):
-        profile: Profile = Profile.objects.exclude(user=request.user)
+        profile: Profile = Profile.objects.filter(is_active=True).exclude(
+            user=request.user
+        )
         queryset = self.filter_backends().filter_queryset(request, profile, self)
 
         serializer = self.serializer_class(queryset, many=True)
@@ -315,7 +332,7 @@ class MyFollowView(APIView):
     def post(self, request, user_id):
         user: User = request.user
 
-        followee = get_object_or_404(User, id=user_id)
+        followee = get_object_or_404(User, id=user_id, is_active=True)
         follow, created = Follow.objects.get_or_create(user_from=user, user_to=followee)
 
         if created:
@@ -340,7 +357,7 @@ class MyFollowingView(APIView):
 
     def get(self, request):
         user: User = request.user
-        following = user.following.all()
+        following = user.following.filter(is_active=True)
         queryset = self.filter_backends().filter_queryset(request, following, self)
 
         serializer = self.serializer_class(queryset, many=True)
@@ -355,7 +372,7 @@ class MyFollowerView(APIView):
 
     def get(self, request):
         user: User = request.user
-        follower = user.follower.all()
+        follower = user.follower.filter(is_active=True)
         queryset = self.filter_backends().filter_queryset(request, follower, self)
 
         serializer = self.serializer_class(queryset, many=True)
@@ -369,9 +386,9 @@ class MyFeedView(APIView):
     filterset_class = PostFilter
 
     def get(self, request):
-        user = request.user
-        following = user.following.all()
-        posts = Post.objects.filter(author__in=following)
+        user: User = request.user
+        following = user.following.filter(is_active=True)
+        posts = Post.objects.filter(author__in=following, is_active=True)
         queryset = self.filter_backends().filter_queryset(request, posts, self)
 
         serializer = self.serializer_class(queryset, many=True)
