@@ -11,8 +11,8 @@ on:
             - 'docker/**'
             - 'infra/**'
             - 'script/**'
-            - '.github/workflows/CI.yaml'
-            - '.github/workflows/CD_main.yaml'
+            - '.github/workflows/01_CI.yaml'
+            - '.github/workflows/03_CICD_to_prod.yaml'
 
 
 env:

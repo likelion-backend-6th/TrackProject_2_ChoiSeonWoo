@@ -1,9 +1,10 @@
 from rest_framework import serializers
 
+from drf_spectacular.utils import extend_schema_field, OpenApiTypes
+
 from taggit.serializers import TagListSerializerField
 
 from posts.models import Comment, Image, Post
-from users.models import User
 from common.utils import image_s3_upload
 
 
@@ -21,7 +22,7 @@ class CommentReadSerializer(serializers.ModelSerializer):
 
 
 class ImageSerializer(serializers.ModelSerializer):
-    image = serializers.ImageField(required=True, write_only=True)
+    image = serializers.ImageField(label="이미지 파일", required=True, write_only=True)
 
     class Meta:
         model = Image
@@ -61,10 +62,11 @@ class ImageReadSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
-    tags = TagListSerializerField(required=False)
-    comments = serializers.SerializerMethodField()
-    images = serializers.SerializerMethodField()
+    tags = TagListSerializerField(label="태그", required=False)
+    comments = serializers.SerializerMethodField(label="댓글")
+    images = serializers.SerializerMethodField(label="이미지")
 
+    @extend_schema_field(OpenApiTypes.OBJECT)
     def get_comments(self, obj: Comment):
         try:
             comments = obj.comments
@@ -72,6 +74,7 @@ class PostSerializer(serializers.ModelSerializer):
         except Comment.DoesNotExist:
             return None
 
+    @extend_schema_field(OpenApiTypes.OBJECT)
     def get_images(self, obj: Comment):
         try:
             images = obj.images
@@ -91,12 +94,14 @@ class PostSerializer(serializers.ModelSerializer):
             "status",
             "is_active",
             "publish",
+            "like_count",
             "tags",
             "created_at",
             "updated_at",
         )
         read_only_fields = (
             "publish",
+            "like_count",
             "created_at",
             "updated_at",
         )

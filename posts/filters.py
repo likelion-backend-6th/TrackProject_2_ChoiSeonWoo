@@ -27,6 +27,28 @@ class PostFilter(filters.FilterSet):
         return result
 
 
+class PostNormalFilter(filters.FilterSet):
+    title = filters.CharFilter(field_name="title", lookup_expr="icontains")
+    nickname = filters.CharFilter(
+        field_name="author__profile__nickname", lookup_expr="icontains"
+    )
+    body = filters.CharFilter(field_name="body", lookup_expr="icontains")
+    tags = filters.CharFilter(method="filter_by_tags")
+
+    class Meta:
+        model = Post
+        fields = ["title", "nickname", "body", "tags"]
+
+    def filter_by_tags(self, queryset, name, value):
+        tags = value.split(",")
+        result = queryset
+
+        for tag in tags:
+            result = result.filter(tags__name=tag)
+
+        return result
+
+
 class CommentFilter(filters.FilterSet):
     nickname = filters.CharFilter(
         field_name="author__profile__nickname", lookup_expr="icontains"

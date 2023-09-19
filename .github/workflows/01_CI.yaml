@@ -10,7 +10,6 @@ on:
 env:
     IMAGE: ${{ vars.NCR_HOST }}/swns
     IMAGE_TAG: ${{ vars.NCR_HOST }}/swns:latest
-    CONTAINER_NAME: swns-dj
 
 jobs:
     lint:

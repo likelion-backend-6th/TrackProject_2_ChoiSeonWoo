@@ -9,7 +9,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from common.test import create_sample_image
 
-from posts.models import Post
+from posts.models import Comment, Post
 from users.models import Follow, Profile
 
 
@@ -186,6 +186,21 @@ class UserViewSetTest(APITestCase):
             author=cls.user02,
             body="user02의 1번째 작성 글",
         )
+        cls.comment01 = Comment.objects.create(
+            post=cls.post02,
+            author=cls.user01,
+            body="user01의 post02에 대한 1번째 댓글",
+        )
+        cls.comment02 = Comment.objects.create(
+            post=cls.post02,
+            author=cls.user01,
+            body="user01의 post02에 대한 2번째 댓글",
+        )
+        cls.comment03 = Comment.objects.create(
+            post=cls.post01,
+            author=cls.user02,
+            body="user02의 post01에 대한 1번째 작성 글",
+        )
 
         cls.user04_data = {
             "email": "user04@example.com",
@@ -314,6 +329,15 @@ class UserViewSetTest(APITestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 3)
+
+    def test_get_comments(self):
+        test_url = reverse("user-comments", args=[self.user01.pk])
+        client = APIClient()
+        client.force_authenticate(user=self.admin_user)
+        res: Response = client.get(test_url)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 2)
 
 
 class ProfileViewTest(APITestCase):
@@ -571,37 +595,6 @@ class OtherUserRelatedViewTest(APITestCase):
         cls.follow05 = Follow.objects.create(user_from=cls.user02, user_to=cls.user03)
         cls.follow06 = Follow.objects.create(user_from=cls.user03, user_to=cls.user05)
 
-        cls.post01 = Post.objects.create(
-            title="user02-post01",
-            author=cls.user02,
-            body="user02의 1번째 작성 글",
-        )
-        cls.post02 = Post.objects.create(
-            title="user02-post02",
-            author=cls.user02,
-            body="user02의 2번째 작성 글",
-        )
-        cls.post03 = Post.objects.create(
-            title="user03-post01",
-            author=cls.user03,
-            body="user03의 1번째 작성 글",
-        )
-        cls.post04 = Post.objects.create(
-            title="user04-post01",
-            author=cls.user04,
-            body="user04의 1번째 작성 글",
-        )
-        cls.post05 = Post.objects.create(
-            title="user05-post01",
-            author=cls.user05,
-            body="user05의 1번째 작성 글",
-        )
-        cls.post06 = Post.objects.create(
-            title="user05-post02",
-            author=cls.user05,
-            body="user05의 2번째 작성 글",
-        )
-
     def test_other_user_info_view(self):
         test_url = reverse("other_users")
         client = APIClient()
@@ -706,12 +699,3 @@ class OtherUserRelatedViewTest(APITestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 1)
-
-    def test_my_feed_view(self):
-        test_url = reverse("my_feed")
-        client = APIClient()
-        client.force_authenticate(user=self.user01)
-        res: Response = client.get(test_url)
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(res.data), 4)
