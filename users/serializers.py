@@ -48,13 +48,14 @@ class UserSerializer(serializers.ModelSerializer):
             "phone",
             "is_active",
             "is_admin",
+            "created_at",
+            "updated_at",
         )
         extra_kwargs = {
             "password": {"write_only": True},
             "fullname": {"required": False},
             "phone": {"required": False},
         }
-
         read_only_fields = (
             "email",
             "created_at",
@@ -75,11 +76,8 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(required=False, write_only=True)
-    user = serializers.SerializerMethodField()
 
-    def get_user(self, obj):
-        user = obj.user
-        return UserSerializer(user).data
+    user = UserSerializer(label="유저", read_only=True)
 
     class Meta:
         model = Profile
@@ -153,14 +151,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 
 class UserInfoSerializer(serializers.ModelSerializer):
-    profile = serializers.SerializerMethodField()
-
-    def get_profile(self, obj: Profile):
-        try:
-            profile = obj.profile
-            return ProfileSerializer(profile).data
-        except Profile.DoesNotExist:
-            return None
+    profile = ProfileSerializer(label="프로필", read_only=True)
 
     class Meta:
         model = User
@@ -169,6 +160,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
             "email",
             "fullname",
             "phone",
+            "password",
             "profile",
             "is_active",
             "is_admin",
@@ -181,6 +173,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         extra_kwargs = {
+            "password": {"write_only": True, "required": True},
             "fullname": {"required": False},
             "phone": {"required": False},
         }
