@@ -70,14 +70,14 @@ class User(CommonModel, AbstractBaseUser, PermissionsMixin):
         return self.is_admin
 
 
-class Profile(CommonModel, models.Model):
+class Profile(CommonModel):
     user = models.OneToOneField(
-        User, on_delete=models.PROTECT, verbose_name="유저", related_name="profile"
+        User, on_delete=models.CASCADE, verbose_name="유저", related_name="profile"
     )
     nickname = models.TextField(verbose_name="닉네임", max_length=30, unique=True)
     birthday = models.DateField(verbose_name="생년월일")
     image_url = models.URLField(verbose_name="프로필사진", null=True, blank=True)
-    is_public = models.BooleanField(verbose_name="공개여부", default=False)
+    is_public = models.BooleanField(verbose_name="공개여부", default=True)
 
     class Meta:
         verbose_name = "프로필"

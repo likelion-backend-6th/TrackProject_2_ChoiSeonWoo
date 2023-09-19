@@ -8,28 +8,33 @@ from boto3 import client
 
 
 class Image:
-    def __init__(self, image: File):
+    aws_access_key_id = settings.NCP_ACCESS_KEY
+    aws_secret_access_key = settings.NCP_SECRET_KEY
+    endpoint_url = settings.NCP_S3_ENDPOINT_URL
+    bucket_name = settings.NCP_S3_BUCKET_NAME
+
+    s3_client: client = client(
+        service_name="s3",
+        endpoint_url=endpoint_url,
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+    )
+
+    def __init__(self, image: File, parent_directory):
         self.file = image.file
         self.name = image.name
         self.id = str(uuid.uuid4())
         self.ext = self.name.split(".")[-1]
+        self.parent_directory = parent_directory
         self.directory = datetime.now().date()
-        self.filename = f"MEDIA/profile/{self.directory}/{self.id}.{self.ext}"
-        self.url = None
-        self.access_key = settings.NCP_ACCESS_KEY
-        self.secret_key = settings.NCP_SECRET_KEY
-        self.endpoint_url = settings.NCP_S3_ENDPOINT_URL
-        self.bucket_name = settings.NCP_S3_BUCKET_NAME
-        self.client: client = client(
-            service_name="s3",
-            endpoint_url=self.endpoint_url,
-            aws_access_key_id=self.access_key,
-            aws_secret_access_key=self.secret_key,
+        self.filename = (
+            f"MEDIA/{self.parent_directory}/{self.directory}/{self.id}.{self.ext}"
         )
+        self.url = None
 
     def s3_upload(self):
         try:
-            self.client.upload_fileobj(self.file, self.bucket_name, self.filename)
+            self.s3_client.upload_fileobj(self.file, self.bucket_name, self.filename)
             self.url = f"{self.endpoint_url}/{self.bucket_name}/{self.filename}"
             print("Upload the Image Successfully")
         except Exception as e:
@@ -37,7 +42,7 @@ class Image:
 
     def set_public_in_s3(self):
         try:
-            response = self.client.put_object_acl(
+            response = self.s3_client.put_object_acl(
                 Bucket=self.bucket_name, Key=self.filename, ACL="public-read"
             )
             print("Set the Image to Public Successfully")
@@ -45,10 +50,10 @@ class Image:
             print(f"Image setting to public failed: {e}")
 
 
-def image_s3_upload(validated_data):
+def image_s3_upload(validated_data, parent_directory):
     if "image" in validated_data:
         image_file = validated_data.pop("image")
-        image = Image(image_file)
+        image = Image(image_file, parent_directory)
         image.s3_upload()
         image.set_public_in_s3()
         validated_data["image_url"] = image.url

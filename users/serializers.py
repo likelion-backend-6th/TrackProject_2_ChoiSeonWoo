@@ -1,8 +1,5 @@
 from rest_framework import serializers
 
-from drf_spectacular.utils import extend_schema_field
-from drf_spectacular.types import OpenApiTypes
-
 from users.models import Follow, User, Profile
 from common.utils import image_s3_upload
 
@@ -50,9 +47,20 @@ class UserSerializer(serializers.ModelSerializer):
             "password",
             "phone",
             "is_active",
+            "is_admin",
+            "created_at",
+            "updated_at",
         )
-        extra_kwargs = {"password": {"write_only": True}}
-        read_only_fields = ("email",)
+        extra_kwargs = {
+            "password": {"write_only": True},
+            "fullname": {"required": False},
+            "phone": {"required": False},
+        }
+        read_only_fields = (
+            "email",
+            "created_at",
+            "updated_at",
+        )
 
     def update(self, instance, validated_data):
         if "password" in validated_data:
@@ -66,41 +74,10 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
-class ProfileUploadSerializer(serializers.ModelSerializer):
-    image = serializers.ImageField(required=False)
+class UserProfileSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(required=False, write_only=True)
 
-    class Meta:
-        model = Profile
-        fields = (
-            "user",
-            "nickname",
-            "birthday",
-            "image",
-            "image_url",
-        )
-        extra_kwargs = {"image": {"write_only": True}}
-        read_only_fields = ("image_url",)
-
-    def create(self, validated_data):
-        validated_data = image_s3_upload(validated_data)
-        instance = super().create(validated_data)
-
-        return instance
-
-    def update(self, instance, validated_data):
-        validated_data = image_s3_upload(validated_data)
-        instance = super().update(instance, validated_data)
-
-        return instance
-
-
-class ProfileSerializer(serializers.ModelSerializer):
-    user = serializers.SerializerMethodField()
-
-    @extend_schema_field(OpenApiTypes.OBJECT)
-    def get_user(self, obj: Profile):
-        user = obj.user
-        return UserSerializer(user).data
+    user = UserSerializer(label="유저", read_only=True)
 
     class Meta:
         model = Profile
@@ -109,13 +86,109 @@ class ProfileSerializer(serializers.ModelSerializer):
             "user",
             "nickname",
             "birthday",
+            "image",
             "image_url",
             "is_public",
             "is_active",
+            "created_at",
+            "updated_at",
         )
+        read_only_fields = (
+            "image_url",
+            "created_at",
+            "updated_at",
+        )
+        extra_kwargs = {"user": {"write_only": True}}
+
+    def create(self, validated_data):
+        validated_data = image_s3_upload(validated_data, "profile")
+        validated_data["user"] = self.context.get("user")
+        instance = super().create(validated_data)
+
+        return instance
+
+    def update(self, instance, validated_data):
+        validated_data = image_s3_upload(validated_data, "profile")
+        instance = super().update(instance, validated_data)
+
+        return instance
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(required=False, write_only=True)
+
+    class Meta:
+        model = Profile
+        fields = (
+            "id",
+            "nickname",
+            "birthday",
+            "image",
+            "image_url",
+            "is_public",
+            "is_active",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = (
+            "image_url",
+            "created_at",
+            "updated_at",
+        )
+
+    def create(self, validated_data):
+        validated_data = image_s3_upload(validated_data, "profile")
+        validated_data["user"] = self.context.get("request").user
+        instance = super().create(validated_data)
+
+        return instance
+
+    def update(self, instance, validated_data):
+        validated_data = image_s3_upload(validated_data, "profile")
+        instance = super().update(instance, validated_data)
+
+        return instance
+
+
+class UserInfoSerializer(serializers.ModelSerializer):
+    profile = ProfileSerializer(label="프로필", read_only=True)
+    is_followed = serializers.SerializerMethodField()
+
+    def get_is_followed(self, obj):
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            return Follow.objects.filter(user_from=request.user, user_to=obj).exists()
+        return False
+
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "email",
+            "fullname",
+            "phone",
+            "password",
+            "profile",
+            "is_followed",
+            "is_active",
+            "is_admin",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = (
+            "email",
+            "created_at",
+            "updated_at",
+        )
+        extra_kwargs = {
+            "password": {"write_only": True, "required": True},
+            "fullname": {"required": False},
+            "phone": {"required": False},
+        }
 
 
 class FollowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Follow
-        exclude = ("created_at",)
+        fields = "__all__"
+        read_only_fields = ("created_at",)
