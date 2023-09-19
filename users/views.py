@@ -296,7 +296,7 @@ class FollowListView(APIView):
 
 @extend_schema(tags=["01. User"])
 class MyInfoView(APIView):
-    serializer_class = UserInfoSerializer
+    serializer_class = UserSerializer
 
     @extend_schema(**schemas.MY_INFO_GET)
     def get(self, request):
@@ -329,7 +329,9 @@ class OtherUserInfoView(APIView):
         )
         queryset = self.filter_backends().filter_queryset(request, users, self)
 
-        serializer = self.serializer_class(queryset, many=True)
+        serializer = self.serializer_class(
+            queryset, context={"request": request}, many=True
+        )
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
