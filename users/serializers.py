@@ -152,6 +152,13 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 class UserInfoSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer(label="프로필", read_only=True)
+    is_followed = serializers.SerializerMethodField()
+
+    def get_is_followed(self, obj):
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            return Follow.objects.filter(user_from=request.user, user_to=obj).exists()
+        return False
 
     class Meta:
         model = User
@@ -162,6 +169,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
             "phone",
             "password",
             "profile",
+            "is_followed",
             "is_active",
             "is_admin",
             "created_at",
