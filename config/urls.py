@@ -49,10 +49,8 @@ from posts.views import (
 )
 
 
-urlpatterns = []
-
-
-my_views_urlpatterns = [
+urlpatterns = [
+    path("users/", include("users.urls")),
     path("my/info/", MyInfoView.as_view(), name="my_info"),
     path("my/profile/", MyProfileView.as_view(), name="my_profile"),
     path("my/follow/<int:user_id>/", MyFollowView.as_view(), name="my_follow"),
@@ -72,18 +70,11 @@ my_views_urlpatterns = [
     path(
         "my/like/comments/", MyLikeCommentListView.as_view(), name="my_liked_comments"
     ),
-]
-
-others_views_urlpatterns = [
     path("others/info/", OtherUserInfoView.as_view(), name="other_users"),
     path("others/profile/", OtherProfileView.as_view(), name="other_profile"),
     path("others/posts/", OtherPostListView.as_view(), name="other_posts_list"),
     path("others/images/", OtherImageListView.as_view(), name="other_images_list"),
-]
-
-apps_urlpatterns = [
     path("admin/", admin.site.urls),
-    path("users/", include("users.urls")),
     path("posts/", include("posts.urls")),
     path("api-auth/", include("rest_framework.urls")),
 ]
@@ -102,10 +93,5 @@ drf_spectacular_urlpatterns = [
     ),
 ]
 
-urlpatterns += (
-    my_views_urlpatterns
-    + others_views_urlpatterns
-    + apps_urlpatterns
-    + drf_spectacular_urlpatterns
-)
+urlpatterns += drf_spectacular_urlpatterns
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
