@@ -40,6 +40,8 @@ class Command(BaseCommand):
                 )
 
                 if created:
+                    like_post.like_count += 1
+                    like_post.save()
                     post_like_count += 1
 
             print(f"{post_like_count}개의 게시글 좋아요가 생성되었습니다.")
@@ -60,6 +62,8 @@ class Command(BaseCommand):
                 )
 
                 if created:
+                    like_comment.like_count += 1
+                    like_comment.save()
                     comment_like_count += 1
 
             print(f"{comment_like_count}개의 댓글 좋아요가 생성되었습니다.")
