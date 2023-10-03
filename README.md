@@ -1,3 +1,36 @@
+
+# [🏳‍🌈 2차 프로젝트 최종 작업물 확인 [바로가기 클릭]](https://github.com/25th-Night/swns-2nd)
+
+<br>
+
+## 💡 프로젝트 마무리를 위해 개인 repository로 `미러링` 하여 코드 이전 후 작업을 진행하였습니다.
+- 최종 작업 결과는 반드시 위의 링크를 클릭하여 확인해주세요.
+- 기존 작업 과정에서 작성한 Issue, Pull Request 등은 현재 repository에서 확인 가능합니다.
+
+<br>
+
+## 🗼 Architecture
+
+![Project Architecture](https://s3.ap-northeast-2.amazonaws.com/25th.night-project/TI/TrackProject_2_ChoiSeonWoo/Architecture.png)
+
+
+
+<br>
+<br>
+
+---
+
+<br>
+
+> 여기 아래 부분부터는 이전 작업까지의 내용을 바탕으로 작성되었음을 안내드립니다.
+
+<br>
+
+---
+
+<br>
+<br>
+
 # 📢 소셜 네트워크 서비스 개발 프로젝트 2차
 
 > 참고 : <u>**[소셜 네트워크 서비스 개발 프로젝트 1차](https://github.com/likelion-backend-6th/TrackProject_1_ChoiSeonWoo)</u> repository**
@@ -173,6 +206,7 @@
 |  Library  |         **django-filter**         |   23.2   |
 |  Library  |         **django-taggit**         |  4.0.0   |
 |  Library  |            **Pillow**             |  10.0.0  |
+|  Library  |             **Faker**             |  19.6.1  |
 
 <br> 
 
@@ -257,7 +291,7 @@
 | **is_active**  | BOOLEAN                 | NOT NULL, DEFAULT : True                                         |
 | **created_at** | DATETIME                | DEFAULT CURRENT_TIMESTAMP, NOT NULL                              |
 
-### 💾 Likes
+### 💾 Like
 
 | Column Name         | Data Type | Constraint                                                     |
 |---------------------|-----------|----------------------------------------------------------------|
@@ -485,6 +519,17 @@
 - [x]  전체 로직 점검 및 코드 수정
 - [x]  prod 환경 배포 관련 workflow 파일 수정
 
+### 1️⃣7️⃣ Dummy Data
+
+- [x]  유저 생성 코드 작성
+- [x]  프로필 생성 코드 작성
+- [x]  팔로우 생성 코드 작성
+- [x]  게시글 생성 코드 작성
+- [x]  댓글 생성 코드 작성
+- [x]  이미지 생성 코드 작성
+- [x]  좋아요 생성 코드 작성
+- [x]  코드 실행 및 테스트
+
 
 <br>
 
@@ -517,6 +562,7 @@
 - [21. (👑 FEATURE) Image (2)](https://notion.so/efbef538b8b44bb9acbe287c9a863a08)
 - [22. (👑 FEATURE) Like](https://notion.so/c20221b942ba4f3f9ed152598cedc846)
 - [23. (👑 FEATURE) OpenAPI (2)](https://notion.so/f8c2e921a4ab43be8160655b42ea184d)
+- [24. (👑 FEATURE) Dummy Data](https://notion.so/a17ba1431a884e69949086d51cc3fdf2)
 
 <br>
 
@@ -560,15 +606,19 @@ AWS_STORAGE_BUCKET_NAME="<name>-<env>" # infra/AWS/modules/s3/staging/main.tf �
 **b. docker image 생성 및 NCloud Container Registry 로그인 후 push**
 
 - NCloud Container Registry 로그인
-```
+
+```bash
 docker login <Sub Account Id>.kr.ncr.nturss.com
 ```
 - Django 앱 이미지 생성
-```
+
+```bash
 docker build -t <Sub Account Id>.kr.ncr.nturss.com/<이미지태그>:latest -f docker/Dockerfile_dj .
 ```
+
 - 생성한 이미지를 NCloud Container Registry 로그인
-```
+
+```bash
 docker push <Sub Account Id>.kr.ncr.nturss.com/<이미지태그>:latest
 ```
 
@@ -617,26 +667,30 @@ aws_storage_bucket_name="<'a'에서 지정한 AWS_STORAGE_BUCKET_NAME>"
 
 - AWS 리소스 생성
 
-```
+```bash
 cd infra/NCP/stage/staging
 ```
-```
+
+```bash
 terraform init
 ```
-```
+
+```bash
 terraform apply
 ```
 
 - NCP 리소스 생성
 
-```
+```bash
 cd ../../../..
 cd infra/NCP/stage/staging
 ```
-```
+
+```bash
 terraform init
 ```
-```
+
+```bash
 terraform apply
 ```
 
@@ -644,7 +698,7 @@ terraform apply
 
 > 줄바꿈 관련 캐리지리턴 제거 명령어
 
-```
+```bash
 sed -i 's/\r//g' ../../script/set_be_server.sh
 sed -i 's/\r//g' ../../script/set_db_server.sh
 ```
@@ -653,13 +707,15 @@ sed -i 's/\r//g' ../../script/set_db_server.sh
 **f. `terraform apply` 의 결과로, 터미널 창에 아래와 같이 출력됨**
 
 - AWS
-```
+
+```bash
 Changes to Outputs:
   + bucket_bucket_regional_dns = "<버킷명>.s3.ap-northeast-2.amazonaws.com"
 ```
 
 - NCP
-```
+
+```bash
 Changes to Outputs:
   + be_lb_domain = "<Load Balancer 주소>"
   + be_public_ip = "<Django 서버 Host 주소>"
@@ -671,10 +727,11 @@ Changes to Outputs:
 
 > `<원격서버 접속시 사용할 계정 정보>` 는 위에서 `d`에서 지정한 데이터들을 사용
 
-```
+```bash
 ssh <원격서버 접속시 사용할 계정의 사용자명>@<Django 서버 Host 주소>
 ```
-```
+
+```bash
 <원격서버 접속시 사용할 계정의 비밀번호> 입력 후 Enter
 ```
 
@@ -683,17 +740,20 @@ ssh <원격서버 접속시 사용할 계정의 사용자명>@<Django 서버 Hos
 > 실제 서비스에서는 도메인이 이미 지정되어 있으므로 불필요한 과정
 
 - `f` 에서 확인한 `Load Balancer 주소`로 지정
-```
+
+```bash
 vi .env
 ```
-```
+
+```bash
 NCP_LB_DOMAIN=<Load Balancer 주소>
 ```
 
 **i. 변경된 환경변수 적용**
 
 - `.env` 파일 리로드 및 해당 내용을 `.bash_aliases` 에도 적용하기 위해 아래 명령어 실행
-```
+
+```bash
 source ~/.bash_aliases
 ```
 
@@ -701,11 +761,12 @@ source ~/.bash_aliases
 
 - 이미 `alias` 가 `.bash_aliases` 파일 내에 지정되어 있어음
 
-```
+```bash
 # django 컨테이너 중지 및 컨테이너 삭제
 dstrm
 ```
-```
+
+```bash
 # 환경변수를 반영하여 django 컨테이너 실행
 drerun
 ```
@@ -713,6 +774,62 @@ drerun
 **k. `f` 에서 확인한 `Load Balancer 주소`로 접속**
 
 - 정상 접속 됨을 확인 가능
+
+<br>
+
+## 📚 테스트용 Dummy Data 생성
+
+### 1. ssh를 이용한 `staging` stage의 Django 서버 접속
+
+```bash
+ssh <원격서버 접속용으로 설정한 계정의 사용자명>@<Django 서버 Host 주소>
+```
+
+```bash
+<원격서버 접속용으로 설정한 계정의 비밀번호> 입력 후 Enter
+```
+
+```bash
+# 아래 명령어를 통해 컨테이너명 확인
+docker ps
+```
+
+```bash
+docker exec -it <컨테이너명> bash
+```
+### 2. 아래 명령어를 순서대로 실행하여 데이터 생성
+
+> 데이터 수를 입력하라는 메시지가 뜨면 본인이 직접 입력
+
+```bash
+python manage.py 01_user
+```
+
+```bash
+python manage.py 02_profile
+```
+
+```bash
+python manage.py 03_follow
+```
+
+```bash
+python manage.py 04_post
+```
+
+```bash
+python manage.py 05_comment
+```
+
+```bash
+python manage.py 06_image
+```
+
+```bash
+python manage.py 07_like
+```
+
+### 3. 서버에 접속하여 데이터 조회 및 확인
 
 
 <br>
@@ -723,8 +840,6 @@ drerun
 - [ ] 쿼리 속도 개선
 - [ ] API Endpoint 개선
 - [ ] 코드 리팩토링
-- [ ] Infra Architecture Diagram 작성
-
 
 
 <br>
