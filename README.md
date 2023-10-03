@@ -1,3 +1,36 @@
+
+# [🏳‍🌈 2차 프로젝트 최종 작업물 확인 [바로가기 클릭]](https://github.com/25th-Night/swns-2nd)
+
+<br>
+
+## 💡 프로젝트 마무리를 위해 개인 repository로 `미러링` 하여 코드 이전 후 작업을 진행하였습니다.
+- 최종 작업 결과는 반드시 위의 링크를 클릭하여 확인해주세요.
+- 기존 작업 과정에서 작성한 Issue, Pull Request 등은 현재 repository에서 확인 가능합니다.
+
+<br>
+
+## 🗼 Architecture
+
+![Project Architecture](https://s3.ap-northeast-2.amazonaws.com/25th.night-project/TI/TrackProject_2_ChoiSeonWoo/Architecture.png)
+
+
+
+<br>
+<br>
+
+---
+
+<br>
+
+> 여기 아래 부분부터는 이전 작업까지의 내용을 바탕으로 작성되었음을 안내드립니다.
+
+<br>
+
+---
+
+<br>
+<br>
+
 # 📢 소셜 네트워크 서비스 개발 프로젝트 2차
 
 > 참고 : <u>**[소셜 네트워크 서비스 개발 프로젝트 1차](https://github.com/likelion-backend-6th/TrackProject_1_ChoiSeonWoo)</u> repository**
@@ -807,8 +840,6 @@ python manage.py 07_like
 - [ ] 쿼리 속도 개선
 - [ ] API Endpoint 개선
 - [ ] 코드 리팩토링
-- [ ] Infra Architecture Diagram 작성
-
 
 
 <br>
